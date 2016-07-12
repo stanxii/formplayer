@@ -98,11 +98,7 @@ public class FormSession {
 
         if(instanceContent != null){
             loadInstanceXml(formDef, instanceContent);
-            initialize(false, sessionData);
-        } else {
-            initialize(true, sessionData);
         }
-
         formEntryModel = new FormEntryModel(formDef, FormEntryModel.REPEAT_STRUCTURE_NON_LINEAR);
         formEntryController = new FormEntryController(formEntryModel);
         formEntryController.setLanguage(locale);
@@ -110,6 +106,7 @@ public class FormSession {
         langs = formEntryModel.getLanguages();
         setLocale(locale, langs);
         uuid = UUID.randomUUID().toString();
+        initialize(instanceContent == null, sessionData);
         this.sequenceId = 1;
         getFormTree();
     }
