@@ -9,7 +9,7 @@ relies on the [CommCare](https://www.github.com/dimagi/commcare-hq) and [Javaros
 libraries (included as subrepositories). FormPlayer is built via gradle (wrapper files included). 
 
 ### Dependencies
-+ FormPlayer caches session instances via Redis
++ FormPlayer caches session instances via Postgres
 + FormPlayer stores session instances via Postgres
 + FormPlayer builds SQLite database for each restored user
 
@@ -19,6 +19,10 @@ Building and Running
 To make properties file:
 
     $ mv config/application.properties.example config/application.properties // Update properties as necessary
+
+Ensure that the proper database is created:
+
+    $ createdb -U postgres formplayer
 
 To run:
 
