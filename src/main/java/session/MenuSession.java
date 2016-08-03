@@ -5,6 +5,7 @@ import hq.CaseAPIs;
 import install.FormplayerConfigEngine;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.http.client.utils.URIBuilder;
 import org.commcare.api.persistence.UserSqlSandbox;
 import org.commcare.modern.database.TableBuilder;
 import org.commcare.modern.session.SessionWrapper;
@@ -45,6 +46,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.UUID;
@@ -121,7 +123,15 @@ public class MenuSession {
     }
 
     private String getReferenceToLatest(String appId) {
-        return  "/a/" + this.domain + "/apps/api/download_ccz/?app_id=" + appId + "#hack=commcare.ccz";
+        URIBuilder builder = null;
+        try {
+            builder = new URIBuilder("/a/" + this.domain + "/apps/api/download_ccz/");
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+        builder.addParameter("app_id", appId);
+        builder.addParameter("latest", "release");
+        return builder.toString();
     }
 
     /**

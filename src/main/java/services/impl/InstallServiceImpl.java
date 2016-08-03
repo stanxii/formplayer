@@ -28,7 +28,7 @@ public class InstallServiceImpl implements InstallService {
         log.info("Configuring application with reference " + reference + " and dbPath: " + dbPath + ".");
         FormplayerConfigEngine engine = new FormplayerConfigEngine(username, dbPath);
         reference = host + reference;
-        if(reference.endsWith(".ccz")){
+        if(reference.startsWith("http")){
             engine.initFromArchive(reference);
         } else if(reference.endsWith(".ccpr")) {
             engine.initFromLocalFileResource(reference);
