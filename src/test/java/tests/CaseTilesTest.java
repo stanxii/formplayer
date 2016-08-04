@@ -33,6 +33,11 @@ public class CaseTilesTest extends BaseTestClass{
                 .thenReturn(FileUtils.getFile(this.getClass(), "restores/casetiles.xml"));
     }
 
+    @Override
+    protected String referenceToCCZLocation(String reference) {
+        return "archives/casetiles.ccz";
+    }
+
     @Test
     public void testCaseTiles() throws Exception {
         JSONObject entityResponseObject = sessionNavigate(new String[] {"2"}, "casetiles");

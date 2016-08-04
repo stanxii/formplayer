@@ -24,6 +24,18 @@ public class InstallTests extends BaseTestClass {
 
     Log log = LogFactory.getLog(InstallTests.class);
 
+    @Override
+    protected String referenceToCCZLocation(String reference) {
+        if (reference.equals("case")) {
+            return "apps/profile.ccz";
+        } else if (reference.equals("createappid")) {
+            return "archives/basic.ccz";
+        } else if (reference.equals("create")) {
+            return "archives/basic.ccz";
+        }
+        return reference;
+    }
+
     @Test
     public void testCaseCreate() throws Exception {
         SqlSandboxUtils.deleteDatabaseFolder("dbs");
@@ -38,7 +50,6 @@ public class InstallTests extends BaseTestClass {
         assert menuResponseObject.has("title");
         SqlSandboxUtils.deleteDatabaseFolder("dbs");
     }
-
 
     @Test
     public void testNewForm() throws Exception {

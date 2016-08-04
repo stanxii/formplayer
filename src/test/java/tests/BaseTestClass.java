@@ -9,6 +9,7 @@ import beans.menus.CommandListResponseBean;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import install.FormplayerConfigEngine;
 import objects.SerializableFormSession;
+import org.commcare.api.persistence.SqlSandboxUtils;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.mockito.InjectMocks;
@@ -46,8 +47,7 @@ import java.util.concurrent.locks.Lock;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -115,10 +115,11 @@ public class BaseTestClass {
                 .thenReturn(FileUtils.getFile(this.getClass(), "test_restore.xml"));
         when(submitServiceMock.submitForm(anyString(), anyString(), any(HqAuth.class)))
                 .thenReturn(new ResponseEntity<String>(HttpStatus.OK));
+        SqlSandboxUtils.deleteDatabaseFolder();
         mapper = new ObjectMapper();
         setupFormSessionRepoMock();
         setupMenuSessionRepoMock();
-        setupInstallServiceMock();
+        // setupInstallServiceMock();
         setupLockMock();
     }
 
@@ -161,6 +162,10 @@ public class BaseTestClass {
         }).when(userLockRegistry).obtain(any());
     }
 
+    protected String referenceToCCZLocation(String reference) {
+        return reference;
+    }
+
     private String resolveAppId(String ref){
         String appId = ref.substring(ref.indexOf("app_id=") + "app_id=".length(),
                 ref.indexOf("#hack"));
@@ -195,42 +200,35 @@ public class BaseTestClass {
         return ref;
     }
 
-    private void setupInstallServiceMock() {
-        try {
-            doAnswer(new Answer<Object>() {
-                @Override
-                public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
-                    try {
-                        Object[] args = invocationOnMock.getArguments();
-                        String ref = (String) args[0];
-                        if(ref.contains("#hack=commcare.ccz")){
-                            ref = resolveAppId(ref);
-                        }
-                        String username = (String) args[1];
-                        String path = (String) args[2];
-                        FormplayerConfigEngine engine = new FormplayerConfigEngine(username, path);
-                        String absolutePath = getTestResourcePath(ref);
-                        System.out.println("Init with path: " + absolutePath);
-                        if (absolutePath.endsWith(".ccpr")) {
-                            engine.initFromLocalFileResource(absolutePath);
-                        } else if (absolutePath.endsWith(".ccz")) {
-                            engine.initFromArchive(absolutePath);
-                        } else {
-                            throw new RuntimeException("Can't install with reference: " + absolutePath);
-                        }
-                        engine.initEnvironment();
-                        return engine;
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        throw e;
-                    }
-                }
-            }).when(installService).configureApplication(anyString(), anyString(), anyString());
-        } catch(Exception e){
-            // don't think we need error handling for mocking
-            e.printStackTrace();
-        }
-    }
+    // private void setupInstallServiceMock() {
+    //     try {
+    //         doAnswer(new Answer<Object>() {
+    //             @Override
+    //             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+    //                 try {
+    //                     Object[] args = invocationOnMock.getArguments();
+    //                     String ref = referenceToCCZLocation((String) args[0]);
+    //                     String username = (String) args[1];
+    //                     String path = (String) args[2];
+    //                     String absolutePath = getTestResourcePath(ref);
+
+    //                     FormplayerConfigEngine engine = spy(new FormplayerConfigEngine(username, path));
+    //                     doReturn(absolutePath).when(engine).downloadToTemp(absolutePath);
+
+    //                     engine.initFromArchive(absolutePath);
+    //                     engine.initEnvironment();
+    //                     return engine;
+    //                 } catch (Exception e) {
+    //                     e.printStackTrace();
+    //                     throw e;
+    //                 }
+    //             }
+    //         }).when(installService).configureApplication(anyString(), anyString(), anyString());
+    //     } catch(Exception e){
+    //         // don't think we need error handling for mocking
+    //         e.printStackTrace();
+    //    }
+    //}
 
     private String getTestResourcePath(String resourcePath){
         try {
@@ -488,10 +486,12 @@ public class BaseTestClass {
     CommandListResponseBean doInstall(String requestPath) throws Exception {
         InstallRequestBean installRequestBean = mapper.readValue
                 (FileUtils.getFile(this.getClass(), requestPath), InstallRequestBean.class);
-        String result = generateMockQuery(ControllerType.MENU,
+        String result = generateMockQuery(
+                ControllerType.MENU,
                 RequestType.POST,
                 Constants.URL_INSTALL,
-                installRequestBean);
+                installRequestBean
+        );
         return mapper.readValue(result,
                 CommandListResponseBean.class);
     }

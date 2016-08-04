@@ -102,11 +102,7 @@ public class FormplayerConfigEngine {
 
     public void initFromArchive(String archiveURL) throws IOException, InstallCancelledException, UnresolvedResourceException, UnfullfilledRequirementsException {
         String fileName;
-        if (archiveURL.startsWith("http")) {
-            fileName = downloadToTemp(archiveURL);
-        } else {
-            fileName = archiveURL;
-        }
+        fileName = downloadToTemp(archiveURL);
         ZipFile zip;
         try {
             zip = new ZipFile(fileName);
@@ -120,7 +116,7 @@ public class FormplayerConfigEngine {
         init("jr://archive/" + archiveGUID + "/profile.ccpr");
     }
 
-    private String downloadToTemp(String resource) {
+    public String downloadToTemp(String resource) {
         try {
             URL url = new URL(resource);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();

@@ -36,6 +36,12 @@ public class DoubleManagementTest  extends BaseTestClass{
                 .thenReturn(FileUtils.getFile(this.getClass(), "restores/parent_child.xml"));
     }
 
+    @Override
+    protected String referenceToCCZLocation(String reference) {
+        return "archives/parent_child.ccz";
+    }
+
+
     @Test
     public void testDoubleForm() throws Exception {
         // setup files

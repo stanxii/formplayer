@@ -28,6 +28,11 @@ public class LocalizationTests extends BaseTestClass {
                 Matchers.any(HqAuth.class))).thenReturn(FileUtils.getFile(this.getClass(), "restores/ccqa.xml"));
     }
 
+    @Override
+    protected String referenceToCCZLocation(String reference) {
+        return "archives/langs.ccz";
+    }
+
     @Test
     public void testMenuLocalization() throws Exception {
         JSONObject sessionNavigateResponse = this.sessionNavigate(new String[]{"0"}, "langs");

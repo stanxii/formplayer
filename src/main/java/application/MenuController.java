@@ -234,7 +234,15 @@ public class MenuController extends AbstractBaseController{
             auth = new BasicAuth(bean.getUsername(), bean.getDomain(), host, password);
         }
 
-        return new MenuSession(bean.getUsername(), bean.getDomain(), bean.getAppId(),
-                bean.getInstallReference(), bean.getLocale(), installService, restoreService, auth);
+        return new MenuSession(
+                bean.getUsername(),
+                bean.getDomain(),
+                bean.getAppId(),
+                bean.getInstallReference(),
+                bean.getLocale(),
+                installService,
+                restoreService,
+                auth
+        );
     }
 }

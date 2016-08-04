@@ -130,7 +130,7 @@ public class MenuSession {
             e.printStackTrace();
         }
         builder.addParameter("app_id", appId);
-        builder.addParameter("latest", "release");
+        builder.addParameter("latest", "save");
         return builder.toString();
     }
 
