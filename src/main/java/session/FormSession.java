@@ -73,7 +73,7 @@ public class FormSession {
         PrototypeUtils.setupPrototypes();
         deserializeFormDef(session.getFormXml());
         formDef = hq.RestoreUtils.loadInstance(formDef, IOUtils.toInputStream(session.getInstanceXml()));
-        formEntryModel = new FormEntryModel(formDef, FormEntryModel.REPEAT_STRUCTURE_NON_LINEAR);
+        formEntryModel = new FormEntryModel(formDef, FormEntryModel.REPEAT_STRUCTURE_LINEAR);
         formEntryController = new FormEntryController(formEntryModel);
         if(session.getInitLang() != null) {
             formEntryController.setLanguage(session.getInitLang());
@@ -106,7 +106,7 @@ public class FormSession {
             initialize(true, sessionData);
         }
 
-        formEntryModel = new FormEntryModel(formDef, FormEntryModel.REPEAT_STRUCTURE_NON_LINEAR);
+        formEntryModel = new FormEntryModel(formDef, FormEntryModel.REPEAT_STRUCTURE_LINEAR);
         formEntryController = new FormEntryController(formEntryModel);
         formEntryController.setLanguage(locale);
         title = formDef.getTitle();
@@ -128,7 +128,7 @@ public class FormSession {
         this.sessionData = sessionData;
         this.domain = domain;
         this.postUrl = postUrl;
-        formEntryModel = new FormEntryModel(formDef, FormEntryModel.REPEAT_STRUCTURE_NON_LINEAR);
+        formEntryModel = new FormEntryModel(formDef, FormEntryModel.REPEAT_STRUCTURE_LINEAR);
         formEntryController = new FormEntryController(formEntryModel);
         langs = formEntryModel.getLanguages();
         setLocale(locale, langs);
