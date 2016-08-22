@@ -15,7 +15,6 @@ import services.InstallService;
 import services.RestoreService;
 import services.SubmitService;
 import services.XFormService;
-import services.impl.InstallServiceImpl;
 import services.impl.SubmitServiceImpl;
 
 @Configuration
@@ -61,11 +60,6 @@ public class TestContext {
     @Bean
     public RestoreService restoreService() {
         return Mockito.mock(RestoreService.class);
-    }
-
-    @Bean
-    public InstallService installService(){
-        return Mockito.mock(InstallServiceImpl.class);
     }
 
     @Bean

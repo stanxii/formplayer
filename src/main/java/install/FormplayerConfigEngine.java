@@ -100,40 +100,18 @@ public class FormplayerConfigEngine {
         ReferenceManager._().addReferenceFactory(new JavaResourceRoot(this.getClass()));
     }
 
-    public void initFromArchive(String archiveURL) throws IOException, InstallCancelledException, UnresolvedResourceException, UnfullfilledRequirementsException {
-        String fileName;
-        fileName = downloadToTemp(archiveURL);
+    public void initFromArchive(String fileName) throws IOException, InstallCancelledException, UnresolvedResourceException, UnfullfilledRequirementsException {
         ZipFile zip;
         try {
             zip = new ZipFile(fileName);
         } catch (IOException e) {
-            log.error("File at " + archiveURL + ": is not a valid CommCare Package. Downloaded to: " + fileName);
+            log.error("File at " + fileName + ": is not a valid CommCare Package. Downloaded to: " + fileName);
             e.printStackTrace();
             throw e;
         }
         String archiveGUID = this.mArchiveRoot.addArchiveFile(zip);
 
         init("jr://archive/" + archiveGUID + "/profile.ccpr");
-    }
-
-    public String downloadToTemp(String resource) {
-        try {
-            URL url = new URL(resource);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setInstanceFollowRedirects(true);  //you still need to handle redirect manully.
-            HttpURLConnection.setFollowRedirects(true);
-
-            File file = File.createTempFile("commcare_", ".ccz");
-
-            FileOutputStream fos = new FileOutputStream(file);
-            StreamsUtil.writeFromInputToOutput(new BufferedInputStream(conn.getInputStream()), fos);
-            return file.getAbsolutePath();
-        } catch (IOException e) {
-            log.error("Issue downloading or create stream for " + resource);
-            e.printStackTrace();
-            System.exit(-1);
-            return null;
-        }
     }
 
     public void initFromLocalFileResource(String resource) throws InstallCancelledException, UnresolvedResourceException, UnfullfilledRequirementsException {

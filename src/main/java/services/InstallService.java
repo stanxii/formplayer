@@ -11,5 +11,9 @@ import java.io.IOException;
  * Created by willpride on 2/25/16.
  */
 public interface InstallService {
-    FormplayerConfigEngine configureApplication(String reference, String username, String dbPath) throws IOException, InstallCancelledException, UnresolvedResourceException, UnfullfilledRequirementsException;
+    FormplayerConfigEngine configureApplication(String cczFilePath, String username, String dbPath) throws IOException, InstallCancelledException, UnresolvedResourceException, UnfullfilledRequirementsException;
+
+    String download(String reference);
 }
+
+

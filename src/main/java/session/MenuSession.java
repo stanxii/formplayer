@@ -85,7 +85,8 @@ public class MenuSession {
         this.installReference = session.getInstallReference();
 
         resolveInstallReference(installReference, appId);
-        this.engine = installService.configureApplication(this.installReference, this.username, "dbs/" + appId);
+        String fpath = installService.download(this.installReference);
+        this.engine = installService.configureApplication(fpath, this.username, "dbs/" + appId);
         this.sandbox = CaseAPIs.restoreIfNotExists(this.username, restoreService, domain, auth);
         this.sessionWrapper = new SessionWrapper(deserializeSession(engine.getPlatform(), session.getCommcareSession()),
                 engine.getPlatform(), sandbox);
@@ -100,7 +101,8 @@ public class MenuSession {
         this.username = TableBuilder.scrubName(username);
         this.domain = domain;
         resolveInstallReference(installReference, appId);
-        this.engine = installService.configureApplication(this.installReference, this.username, "dbs/" + appId);
+        String filePath = installService.download(installReference);
+        this.engine = installService.configureApplication(filePath, this.username, "dbs/" + appId);
         this.sandbox = CaseAPIs.restoreIfNotExists(this.username, restoreService, domain, auth);
         this.sessionWrapper = new SessionWrapper(engine.getPlatform(), sandbox);
         this.locale = locale;

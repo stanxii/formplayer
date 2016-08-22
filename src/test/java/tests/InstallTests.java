@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import utils.MockInstallServiceImpl;
 import utils.TestContext;
 
 import java.io.IOException;
@@ -53,6 +54,8 @@ public class InstallTests extends BaseTestClass {
 
     @Test
     public void testNewForm() throws Exception {
+        this.installService = new MockInstallServiceImpl("archives/basic.ccz");
+
         // setup files
         CommandListResponseBean menuResponseBean =
                 doInstall("requests/install/install.json");

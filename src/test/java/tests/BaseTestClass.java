@@ -78,8 +78,7 @@ public class BaseTestClass {
     @Autowired
     SubmitService submitServiceMock;
 
-    @Autowired
-    private InstallService installService;
+    protected InstallService installService;
 
     @Autowired
     protected LockRegistry userLockRegistry;
@@ -105,7 +104,6 @@ public class BaseTestClass {
         Mockito.reset(xFormServiceMock);
         Mockito.reset(restoreServiceMock);
         Mockito.reset(submitServiceMock);
-        Mockito.reset(installService);
         Mockito.reset(userLockRegistry);
         MockitoAnnotations.initMocks(this);
         mockFormController = MockMvcBuilders.standaloneSetup(formController).build();
@@ -119,7 +117,6 @@ public class BaseTestClass {
         mapper = new ObjectMapper();
         setupFormSessionRepoMock();
         setupMenuSessionRepoMock();
-        // setupInstallServiceMock();
         setupLockMock();
     }
 

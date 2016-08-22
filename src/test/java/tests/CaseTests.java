@@ -9,6 +9,7 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import util.Constants;
+import utils.MockInstallServiceImpl;
 import utils.TestContext;
 
 /**
@@ -24,7 +25,6 @@ public class CaseTests extends BaseTestClass {
     public void testCases() throws Exception {
 
         // Start new session and submit create case form
-
         NewFormSessionResponse newSessionResponse = startNewSession("requests/new_form/new_form_3.json",
                 "xforms/cases/create_case.xml");
 
