@@ -1,10 +1,27 @@
 package services;
 
+import application.SQLiteProperties;
 import auth.HqAuth;
+import beans.CaseBean;
 import exceptions.AsyncRetryException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.commcare.api.persistence.SqlSandboxUtils;
+import org.commcare.api.persistence.SqliteIndexedStorageUtility;
+import org.commcare.api.persistence.UserSqlSandbox;
+import org.commcare.cases.model.Case;
+import org.commcare.core.sandbox.SandboxUtils;
 import org.commcare.modern.database.TableBuilder;
+import org.commcare.modern.parse.ParseUtilsHelper;
+import org.javarosa.core.api.ClassNameHasher;
+import org.javarosa.core.model.User;
+import org.javarosa.core.model.condition.EvaluationContext;
+import org.javarosa.core.services.storage.IStorageIterator;
+import org.javarosa.core.util.externalizable.PrototypeFactory;
+import org.javarosa.xml.util.InvalidStructureException;
+import org.javarosa.xml.util.UnfullfilledRequirementsException;
+import org.javarosa.xpath.XPathParseTool;
+import org.javarosa.xpath.expr.XPathFuncExpr;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -16,11 +33,13 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+import org.xmlpull.v1.XmlPullParserException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
@@ -37,10 +56,94 @@ public class RestoreFactory {
     private String domain;
     private HqAuth hqAuth;
 
+    private String cachedRestore;
+
     private final Log log = LogFactory.getLog(RestoreFactory.class);
 
+    public String getPath() {
+        if (asUsername != null){
+            return SQLiteProperties.getDataDir() + domain + "/" + username + "/" + asUsername + ".db";
+        }
+        return SQLiteProperties.getDataDir() + domain + "/" + username + ".db";
+    }
+
+    public UserSqlSandbox getUserSqlSandbox() {
+        if(asUsername == null) {
+            return new UserSqlSandbox(username, SQLiteProperties.getDataDir() + domain);
+        }
+        return new UserSqlSandbox(asUsername, SQLiteProperties.getDataDir() + domain + "/" + username);
+    }
+
+    public UserSqlSandbox forceRestore() throws Exception {
+        new File(getPath()).delete();
+        return restoreIfNotExists();
+    }
+
+    public UserSqlSandbox restoreIfNotExists() throws Exception{
+        File db = new File(getPath());
+        if(db.exists()){
+            return getUserSqlSandbox();
+        } else{
+            db.getParentFile().mkdirs();
+            return restoreUser();
+        }
+    }
+
+    public String filterCases(String filterExpression) {
+        try {
+            String filterPath = "join(',', instance('casedb')/casedb/case" + filterExpression + "/@case_id)";
+            UserSqlSandbox mSandbox = restoreIfNotExists();
+            EvaluationContext mContext = SandboxUtils.getInstanceContexts(mSandbox, "casedb", "jr://instance/casedb");
+            return XPathFuncExpr.toString(XPathParseTool.parseXPath(filterPath).eval(mContext));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "null";
+    }
+
+    public static CaseBean getFullCase(String caseId, SqliteIndexedStorageUtility<Case> caseStorage){
+        Case cCase = caseStorage.getRecordForValue("case-id", caseId);
+        return new CaseBean(cCase);
+    }
+
+    public CaseBean[] filterCasesFull(String filterExpression) throws Exception{
+        String filterPath = "join(',', instance('casedb')/casedb/case" + filterExpression + "/@case_id)";
+        UserSqlSandbox mSandbox = restoreIfNotExists();
+        EvaluationContext mContext = SandboxUtils.getInstanceContexts(mSandbox, "casedb", "jr://instance/casedb");
+        String filteredCases = XPathFuncExpr.toString(XPathParseTool.parseXPath(filterPath).eval(mContext));
+        String[] splitCases = filteredCases.split(",");
+        CaseBean[] ret = new CaseBean[splitCases.length];
+        SqliteIndexedStorageUtility<Case> caseStorage = mSandbox.getCaseStorage();
+        int count = 0;
+        for(String cCase: splitCases){
+            CaseBean caseBean = getFullCase(cCase, caseStorage);
+            ret[count] = caseBean;
+            count++;
+        }
+        return ret;
+    }
+
+    private UserSqlSandbox restoreUser() throws
+            UnfullfilledRequirementsException, InvalidStructureException, IOException, XmlPullParserException {
+        UserSqlSandbox mSandbox = getUserSqlSandbox();
+        PrototypeFactory.setStaticHasher(new ClassNameHasher());
+        ParseUtilsHelper.parseXMLIntoSandbox(getRestoreXml(), mSandbox);
+        // initialize our sandbox's logged in user
+        for (IStorageIterator<User> iterator = mSandbox.getUserStorage().iterate(); iterator.hasMore(); ) {
+            User u = iterator.nextRecord();
+            if (username.equalsIgnoreCase(u.getUsername())) {
+                mSandbox    .setLoggedInUser(u);
+            }
+        }
+        return mSandbox;
+    }
 
     public String getRestoreXml() {
+
+        if(cachedRestore != null) {
+            return cachedRestore;
+        }
+
         if (domain == null || (username == null && asUsername == null)) {
             throw new RuntimeException("Domain and one of username or asUsername must be non-null. " +
                     " Domain: " + domain +
@@ -55,7 +158,8 @@ public class RestoreFactory {
         }
 
         log.info("Restoring from URL " + restoreUrl);
-        return getRestoreXmlHelper(restoreUrl, hqAuth);
+        cachedRestore = getRestoreXmlHelper(restoreUrl, hqAuth);
+        return cachedRestore;
     }
 
     /**
@@ -168,5 +272,13 @@ public class RestoreFactory {
 
     public void setAsUsername(String asUsername) {
         this.asUsername = asUsername;
+    }
+
+    public String getCachedRestore() {
+        return cachedRestore;
+    }
+
+    public void setCachedRestore(String cachedRestore) {
+        this.cachedRestore = cachedRestore;
     }
 }

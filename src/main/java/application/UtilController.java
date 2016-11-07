@@ -2,7 +2,6 @@ package application;
 
 import auth.DjangoAuth;
 import beans.*;
-import hq.CaseAPIs;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import objects.SerializableFormSession;
@@ -36,7 +35,7 @@ public class UtilController extends AbstractBaseController {
     public CaseFilterResponseBean filterCasesHQ(@RequestBody CaseFilterRequestBean filterRequest,
                                                 @CookieValue(Constants.POSTGRES_DJANGO_SESSION_ID) String authToken) throws Exception {
         configureRestoreFactory(filterRequest, new DjangoAuth(authToken));
-        String caseResponse = CaseAPIs.filterCases(restoreFactory, filterRequest.getFilterExpression());
+        String caseResponse = restoreFactory.filterCases(filterRequest.getFilterExpression());
         return new CaseFilterResponseBean(caseResponse);
     }
 
@@ -45,7 +44,7 @@ public class UtilController extends AbstractBaseController {
     public CaseFilterFullResponseBean filterCasesFull(@RequestBody CaseFilterRequestBean filterRequest,
                                                       @CookieValue(Constants.POSTGRES_DJANGO_SESSION_ID) String authToken)throws Exception {
         configureRestoreFactory(filterRequest, new DjangoAuth(authToken));
-        CaseBean[] caseResponse = CaseAPIs.filterCasesFull(restoreFactory, filterRequest.getFilterExpression());
+        CaseBean[] caseResponse = restoreFactory.filterCasesFull(filterRequest.getFilterExpression());
         return new CaseFilterFullResponseBean(caseResponse);
     }
 
@@ -54,7 +53,7 @@ public class UtilController extends AbstractBaseController {
     public SyncDbResponseBean syncUserDb(@RequestBody SyncDbRequestBean syncRequest,
                                          @CookieValue(Constants.POSTGRES_DJANGO_SESSION_ID) String authToken) throws Exception {
         configureRestoreFactory(syncRequest, new DjangoAuth(authToken));
-        CaseAPIs.forceRestore(restoreFactory);
+        restoreFactory.forceRestore();
         return new SyncDbResponseBean();
     }
 

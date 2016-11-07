@@ -1,7 +1,6 @@
 package session;
 
 import auth.HqAuth;
-import hq.CaseAPIs;
 import install.FormplayerConfigEngine;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -89,7 +88,7 @@ public class MenuSession {
                 ApplicationUtils.getApplicationDBPath(this.domain, this.username, this.appId)
         );
 
-        this.sandbox = CaseAPIs.restoreIfNotExists(restoreFactory);
+        this.sandbox = restoreFactory.restoreIfNotExists();
 
         this.sessionWrapper = new SessionWrapper(deserializeSession(engine.getPlatform(), session.getCommcareSession()),
                 engine.getPlatform(), sandbox);
@@ -112,7 +111,7 @@ public class MenuSession {
                 this.username,
                 ApplicationUtils.getApplicationDBPath(domain, this.username, appId)
         );
-        this.sandbox = CaseAPIs.restoreIfNotExists(restoreFactory);
+        this.sandbox = restoreFactory.restoreIfNotExists();
         this.sessionWrapper = new SessionWrapper(engine.getPlatform(), sandbox);
         this.locale = locale;
         SessionUtils.setLocale(this.locale);

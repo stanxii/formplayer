@@ -99,11 +99,11 @@ public class NewSessionRequestBean extends AuthenticatedRequestBean implements A
     public void setOneQuestionPerScreen(boolean oneQuestionPerScreen) {
         this.oneQuestionPerScreen = oneQuestionPerScreen;
     }
-
+    @JsonGetter(value = "restoreAs")
     public String getAsUser() {
         return asUser;
     }
-
+    @JsonSetter(value = "restoreAs")
     public void setAsUser(String asUser) {
         this.asUser = asUser;
     }

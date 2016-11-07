@@ -2,6 +2,7 @@ package beans;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import org.springframework.beans.factory.annotation.Value;
 
 /**
  * Created by willpride on 2/4/16.
@@ -54,10 +55,12 @@ public class InstallRequestBean extends AuthenticatedRequestBean implements AsUs
         this.locale = locale;
     }
 
+    @JsonGetter(value = "restoreAs")
     public String getAsUser() {
         return asUser;
     }
 
+    @JsonSetter(value = "restoreAs")
     public void setAsUser(String asUser) {
         this.asUser = asUser;
     }

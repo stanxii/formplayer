@@ -16,6 +16,7 @@ public class FormEntryResponseBean extends SessionResponseBean{
     private String status;
     private String reason;
     private String type;
+    private String entrySessionString;
 
     // our JSON-Object mapping lib (Jackson) requires a default constructor
     public FormEntryResponseBean(){}
@@ -56,5 +57,13 @@ public class FormEntryResponseBean extends SessionResponseBean{
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public String getEntrySessionString() {
+        return entrySessionString;
+    }
+
+    public void setEntrySessionString(String entrySessionString) {
+        this.entrySessionString = entrySessionString;
     }
 }

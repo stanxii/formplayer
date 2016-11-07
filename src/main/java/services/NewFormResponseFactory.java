@@ -3,7 +3,6 @@ package services;
 import auth.HqAuth;
 import beans.NewFormResponse;
 import beans.NewSessionRequestBean;
-import hq.CaseAPIs;
 import objects.SerializableFormSession;
 import org.commcare.api.persistence.UserSqlSandbox;
 import org.javarosa.core.model.FormDef;
@@ -37,7 +36,7 @@ public class NewFormResponseFactory {
     public NewFormResponse getResponse(NewSessionRequestBean bean, String postUrl, HqAuth auth) throws Exception {
 
         String formXml = getFormXml(bean.getFormUrl(), auth);
-        UserSqlSandbox sandbox = CaseAPIs.restoreIfNotExists(restoreFactory);
+        UserSqlSandbox sandbox = restoreFactory.restoreIfNotExists();
 
         FormSession formSession = new FormSession(sandbox, parseFormDef(formXml), bean.getSessionData().getUsername(),
                 bean.getSessionData().getDomain(), bean.getSessionData().getData(), postUrl, bean.getLang(), null,

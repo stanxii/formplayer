@@ -17,6 +17,7 @@ public class CaseFilterRequestBean extends AuthenticatedRequestBean implements A
     private Map<String, String> hqAuth;
     private SessionData sessionData;
     private String restoreXml;
+    private String asUser;
 
     @JsonGetter(value = "filter_expr")
     public String getFilterExpression() {
@@ -51,8 +52,13 @@ public class CaseFilterRequestBean extends AuthenticatedRequestBean implements A
         this.restoreXml = restoreXml;
     }
 
-    @Override
+    @JsonGetter(value = "restoreAs")
     public String getAsUser() {
         return username;
+    }
+
+    @JsonSetter(value = "restoreAs")
+    public void setAsUser(String asUser) {
+        this.asUser = asUser;
     }
 }

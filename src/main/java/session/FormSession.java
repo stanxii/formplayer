@@ -1,7 +1,6 @@
 package session;
 
 import beans.CaseBean;
-import hq.CaseAPIs;
 import objects.SerializableFormSession;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
@@ -31,6 +30,7 @@ import org.javarosa.xform.schema.FormInstanceLoader;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.stereotype.Component;
+import services.RestoreFactory;
 import util.PrototypeUtils;
 
 import java.io.*;
@@ -76,7 +76,7 @@ public class FormSession {
 
     private void setupJavaRosaObjects() {
         formEntryModel = new FormEntryModel(formDef, FormEntryModel.REPEAT_STRUCTURE_NON_LINEAR);
-        formEntryController = new FormEntryController(formEntryModel);
+        formEntryController = FormEntryController.buildRecordingController(formEntryModel);
         title = formDef.getTitle();
         langs = formEntryModel.getLanguages();
         initLocale();
@@ -89,14 +89,22 @@ public class FormSession {
         }
     }
 
+    private RestoreFactory getRestoreFactory() {
+        RestoreFactory restoreFactory = new RestoreFactory();
+        restoreFactory.setUsername(this.username);
+        restoreFactory.setAsUsername(this.asUser);
+        restoreFactory.setDomain(this.domain);
+        restoreFactory.setCachedRestore(this.restoreXml);
+        return restoreFactory;
+    }
+
     public FormSession(SerializableFormSession session) throws Exception{
         this.username = session.getUsername();
         this.asUser = session.getAsUser();
         this.restoreXml = session.getRestoreXml();
         this.domain = session.getDomain();
-        this.sandbox = CaseAPIs.restoreIfNotExists(asUser != null ? asUser : username,
-                this.domain,
-                restoreXml);
+        RestoreFactory restoreFactory = getRestoreFactory();
+        this.sandbox = restoreFactory.restoreIfNotExists();
         this.postUrl = session.getPostUrl();
         this.sessionData = session.getSessionData();
         this.oneQuestionPerScreen = session.getOneQuestionPerScreen();
@@ -391,7 +399,8 @@ public class FormSession {
         if (caseId == null) {
             return null;
         }
-        CaseBean caseBean = CaseAPIs.getFullCase(caseId, (SqliteIndexedStorageUtility<Case>) this.getSandbox().getCaseStorage());
+        RestoreFactory restoreFactory = getRestoreFactory();
+        CaseBean caseBean = restoreFactory.getFullCase(caseId, (SqliteIndexedStorageUtility<Case>) this.getSandbox().getCaseStorage());
         return (String) caseBean.getProperties().get("case_name");
     }
 
@@ -401,5 +410,9 @@ public class FormSession {
 
     public void setAsUser(String asUser) {
         this.asUser = asUser;
+    }
+
+    public String getRecordedSessionString() {
+        return getFormEntryController().getFormEntrySessionString();
     }
 }
