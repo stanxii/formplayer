@@ -88,6 +88,8 @@ public class MenuController extends AbstractBaseController{
      */
     @RequestMapping(value = Constants.URL_MENU_NAVIGATION, method = RequestMethod.POST)
     @UserLock
+    @ApiOperation(value = "Performs app installation if necessary, then runs given stack operations against the " +
+            "instantiated application. Also can accept preview commands or a menuSessionId.")
     public BaseResponseBean navigateSessionWithAuth(@RequestBody SessionNavigationBean sessionNavigationBean,
                                           @CookieValue(Constants.POSTGRES_DJANGO_SESSION_ID) String authToken) throws Exception {
         MenuSession menuSession;

@@ -23,11 +23,9 @@ public class LoggingAspect {
         MethodSignature ms = (MethodSignature) joinPoint.getSignature();
         Method m = ms.getMethod();
         String requestPath = m.getAnnotation(RequestMapping.class).value()[0]; //Should be only one
-        try {
-            Object requestBean = joinPoint.getArgs()[0];
-            log.info("Request to " + requestPath + " with bean " + requestBean);
-        } catch(ArrayIndexOutOfBoundsException e) {
-            // no request body
+        if (joinPoint.getArgs().length > 0) {
+            log.info("Request to " + requestPath + " with body " + joinPoint.getArgs()[0]);
+        } else {
             log.info("Request to " + requestPath + " with no request body.");
         }
         Object result = joinPoint.proceed();

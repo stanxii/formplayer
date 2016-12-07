@@ -6,7 +6,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 /**
- * Created by willpride on 1/20/16.
+ * Request to answer a question of a FormSession
  */
 @ApiModel("Answer Question Request")
 public class AnswerQuestionRequestBean extends SessionRequestBean {

@@ -26,12 +26,7 @@ public class LockAspect {
         Object[] args = joinPoint.getArgs();
 
         if (!(args[0] instanceof AuthenticatedRequestBean)) {
-            try {
-                return joinPoint.proceed();
-            } catch (Throwable throwable) {
-                throwable.printStackTrace();
-                throw new RuntimeException(throwable);
-            }
+            return joinPoint.proceed();
         }
 
         AuthenticatedRequestBean bean = (AuthenticatedRequestBean) args[0];

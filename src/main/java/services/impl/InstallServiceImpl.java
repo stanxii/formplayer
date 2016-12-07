@@ -10,6 +10,9 @@ import org.commcare.resources.model.UnresolvedResourceException;
 import org.commcare.util.engine.CommCareConfigEngine;
 import org.javarosa.xml.util.UnfullfilledRequirementsException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import services.FormplayerStorageFactory;
 import services.InstallService;
 
@@ -20,6 +23,7 @@ import java.io.File;
  * either from a .ccz or .ccpr reference or existing dbs.
  * This can involve app download, install, and initialization of resources.
  */
+@Service
 public class InstallServiceImpl implements InstallService {
 
     @Autowired
