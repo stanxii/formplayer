@@ -8,6 +8,7 @@ import org.commcare.resources.model.installers.MediaInstaller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import services.FormplayerStorageFactory;
+import services.RestoreFactory;
 
 /**
  * Overrides InstallerFactory to point to Formplayer's own installer classes.
@@ -18,6 +19,9 @@ public class FormplayerInstallerFactory extends InstallerFactory {
 
     @Autowired
     FormplayerStorageFactory storageFactory;
+
+    @Autowired
+    RestoreFactory restoreFactory;
 
     public ResourceInstaller getProfileInstaller(boolean forceInstall) {
         return new FormplayerProfileInstaller(forceInstall, storageFactory);
@@ -33,7 +37,7 @@ public class FormplayerInstallerFactory extends InstallerFactory {
     }
 
     public ResourceInstaller getSuiteInstaller() {
-        return new FormplayerSuiteInstaller(storageFactory);
+        return new FormplayerSuiteInstaller(storageFactory, restoreFactory);
     }
 
     public ResourceInstaller getLocaleFileInstaller(String locale) {

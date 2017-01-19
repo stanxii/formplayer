@@ -6,6 +6,7 @@ import org.commcare.util.engine.CommCareConfigEngine;
 import org.springframework.beans.factory.annotation.Autowired;
 import services.FormplayerStorageFactory;
 import services.InstallService;
+import services.RestoreFactory;
 
 import java.io.File;
 import java.net.URL;
@@ -17,6 +18,9 @@ public class TestInstallService implements InstallService {
 
     @Autowired
     FormplayerStorageFactory storageFactory;
+
+    @Autowired
+    RestoreFactory restoreFactory;
 
     @Autowired
     FormplayerInstallerFactory formplayerInstallerFactory;
