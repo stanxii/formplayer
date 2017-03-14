@@ -21,15 +21,13 @@ import java.sql.SQLException;
  * FormPlayer's storage factory that negotiates between parsers/installers and the storage layer
  */
 @Component
-public class FormplayerStorageFactory implements IStorageIndexedFactory, ConnectionHandler{
+public class FormplayerStorageFactory extends BaseStorageManager implements IStorageIndexedFactory {
 
     private String username;
     private String domain;
     private String appId;
     private String databasePath;
     private String trimmedUsername;
-
-    private static Connection connection;
 
     public void configure(InstallRequestBean authenticatedRequestBean) {
         configure(authenticatedRequestBean.getUsername(),
@@ -47,37 +45,6 @@ public class FormplayerStorageFactory implements IStorageIndexedFactory, Connect
         this.appId = appId;
         this.trimmedUsername = StringUtils.substringBefore(username, "@");
         this.databasePath = ApplicationUtils.getApplicationDBPath(domain, username, appId);
-    }
-
-    @Override
-    public Connection getConnection() {
-        try {
-            if (connection == null || connection.isClosed()) {
-                DataSource dataSource = SqlSandboxUtils.getDataSource(trimmedUsername, databasePath);
-                connection = dataSource.getConnection();
-            } else if (!((SQLiteConnection) connection).url().contains(username) ||
-                    !((SQLiteConnection) connection).url().contains(domain) ||
-                    !((SQLiteConnection) connection).url().contains(appId)) {
-                closeConnection();
-                DataSource dataSource = SqlSandboxUtils.getDataSource(trimmedUsername, databasePath);
-                connection = dataSource.getConnection();
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        return connection;
-    }
-
-    @PreDestroy
-    public void closeConnection() {
-        try {
-            if(connection != null && !connection.isClosed()) {
-                connection.close();
-                connection = null;
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
