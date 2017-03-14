@@ -7,6 +7,7 @@ import beans.debugger.XPathQueryItem;
 import beans.menus.CommandListResponseBean;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import installers.FormplayerInstallerFactory;
+import org.springframework.test.context.TestExecutionListeners;
 import sandbox.SqlSandboxUtils;
 import org.junit.After;
 import org.junit.Before;

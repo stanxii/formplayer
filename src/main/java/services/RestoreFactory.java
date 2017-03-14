@@ -66,8 +66,6 @@ public class RestoreFactory extends BaseStorageManager {
 
     private final Log log = LogFactory.getLog(RestoreFactory.class);
 
-    private Connection connection;
-
     public void configure(AuthenticatedRequestBean authenticatedRequestBean, HqAuth auth) {
         configure(authenticatedRequestBean.getUsername(),
                 authenticatedRequestBean.getDomain(),
@@ -82,6 +80,22 @@ public class RestoreFactory extends BaseStorageManager {
         this.setHqAuth(auth);
     }
 
+    @Override
+    void setConnection(Connection connection) {
+        instance.set(connection);
+    }
+
+    Connection connection() {
+        return instance.get();
+    }
+
+    private static final ThreadLocal<Connection> instance = new ThreadLocal<Connection>(){
+        @Override
+        protected Connection initialValue()
+        {
+            return null;
+        }
+    };
 
     public UserSqlSandbox getSqlSandbox() {
         return new UserSqlSandbox(this, username, getDatabasePath());

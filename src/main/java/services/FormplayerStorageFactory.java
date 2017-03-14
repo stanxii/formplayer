@@ -2,6 +2,7 @@ package services;
 
 import beans.InstallRequestBean;
 import org.apache.commons.lang3.StringUtils;
+import org.javarosa.core.services.IPropertyManager;
 import org.sqlite.SQLiteConnection;
 import org.sqlite.javax.SQLiteConnectionPoolDataSource;
 import sandbox.SqlSandboxUtils;
@@ -79,6 +80,23 @@ public class FormplayerStorageFactory extends BaseStorageManager implements ISto
     public String getDatabasePath() {
         return databasePath;
     }
+
+    @Override
+    void setConnection(Connection connection) {
+        instance.set(connection);
+    }
+
+    Connection connection() {
+        return instance.get();
+    }
+
+    private static final ThreadLocal<Connection> instance = new ThreadLocal<Connection>(){
+        @Override
+        protected Connection initialValue()
+        {
+            return null;
+        }
+    };
 
     public String getTrimmedUsername() {
         return trimmedUsername;

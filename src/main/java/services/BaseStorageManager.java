@@ -10,29 +10,30 @@ import java.sql.SQLException;
 /**
  * Created by willpride on 3/14/17.
  */
-public abstract class BaseStorageManager implements ConnectionHandler {
-
-    Connection connection;
+public abstract class BaseStorageManager implements ConnectionHandler{
 
     abstract String getUsername();
     abstract String getDatabasePath();
+    abstract void setConnection(Connection connection);
+    abstract Connection connection();
+
 
     @Override
     public Connection getConnection() {
         try {
-            if (connection == null || connection.isClosed()) {
+            if (connection() == null || connection().isClosed()) {
                 DataSource dataSource = SqlSandboxUtils.getDataSource(getUsername(), getDatabasePath());
-                connection = dataSource.getConnection();
+                setConnection(dataSource.getConnection());
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return connection;
+        return connection();
     }
 
     public void setAutoCommit(boolean autoCommit) {
         try {
-            connection.setAutoCommit(autoCommit);
+            connection().setAutoCommit(autoCommit);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -40,7 +41,7 @@ public abstract class BaseStorageManager implements ConnectionHandler {
 
     public void commit() {
         try {
-            connection.commit();
+            connection().commit();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -48,13 +49,16 @@ public abstract class BaseStorageManager implements ConnectionHandler {
 
     @PreDestroy
     public void closeConnection() {
+        System.out.println("Closing connection " + connection());
         try {
-            if(connection != null && !connection.isClosed()) {
-                connection.close();
-                connection = null;
+            if(connection() != null && !connection().isClosed()) {
+                connection().close();
+                setConnection(null);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
+
+
 }
