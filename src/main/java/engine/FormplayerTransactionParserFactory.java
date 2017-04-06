@@ -1,5 +1,8 @@
 package engine;
 
+import org.commcare.xml.FixtureXmlParser;
+import org.javarosa.core.model.instance.FormInstance;
+import org.javarosa.core.services.storage.IStorageUtilityIndexed;
 import sandbox.UserSqlSandbox;
 import org.commcare.cases.model.Case;
 import org.commcare.core.parse.CommCareTransactionParserFactory;
@@ -41,6 +44,32 @@ public class FormplayerTransactionParserFactory extends CommCareTransactionParse
             return formInstanceParser.getParser(parser);
         }
         return super.getParser(parser);
+    }
+
+    public void initFixtureParser() {
+        fixtureParser = new TransactionParserFactory() {
+            FixtureXmlParser created = null;
+
+            @Override
+            public TransactionParser getParser(KXmlParser parser) {
+                if (created == null) {
+                    created = new FixtureXmlParser(parser, true,
+                            ((UserSqlSandbox)sandbox).getUserFixtureStorage()) {
+                        private IStorageUtilityIndexed<FormInstance> fixtureStorage;
+
+                        @Override
+                        public IStorageUtilityIndexed<FormInstance> storage() {
+                            if (fixtureStorage == null) {
+                                fixtureStorage = sandbox.getUserFixtureStorage();
+                            }
+                            return fixtureStorage;
+                        }
+                    };
+                }
+
+                return created;
+            }
+        };
     }
 
     @Override
