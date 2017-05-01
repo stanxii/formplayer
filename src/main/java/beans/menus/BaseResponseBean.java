@@ -1,6 +1,5 @@
 package beans.menus;
 
-import beans.InstanceXmlBean;
 import beans.NotificationMessageBean;
 import org.commcare.modern.session.SessionWrapper;
 import util.SessionUtils;
@@ -18,6 +17,7 @@ public class BaseResponseBean {
     protected boolean clearSession;
     private String appId;
     private String appVersion;
+    private String[] selections;
 
     public BaseResponseBean() {}
 
@@ -75,5 +75,13 @@ public class BaseResponseBean {
 
     public void setAppVersion(String appVersion) {
         this.appVersion = appVersion;
+    }
+
+    public String[] getSelections() {
+        return selections;
+    }
+
+    public void setSelections(String[] selections) {
+        this.selections = selections;
     }
 }

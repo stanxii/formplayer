@@ -1,5 +1,10 @@
 package util;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.Pattern;
+
 /**
  * Created by willpride on 2/4/16.
  */
@@ -11,25 +16,23 @@ public class Constants {
     public final static String URL_ANSWER_QUESTION = "answer";
     public final static String URL_CURRENT = "current";
     public final static String URL_SUBMIT_FORM = "submit-all";
-    public final static String URL_GET_INSTANCE = "get-instance";
     public final static String URL_EVALUATE_XPATH = "evaluate-xpath";
     public final static String URL_NEW_REPEAT = "new-repeat";
     public final static String URL_DELETE_REPEAT = "delete-repeat";
-    public final static String URL_FILTER_CASES = "filter_cases";
-    public final static String URL_FILTER_CASES_FULL = "filter_cases_full";
     public final static String URL_SYNC_DB = "sync-db";
     public final static String URL_LIST_SESSIONS = "sessions";
     public final static String URL_GET_SESSION = "get_session";
     public static final String URL_INSTALL = "install";
     public static final String URL_UPDATE = "update";
     public static final String URL_MENU_NAVIGATION = "navigate_menu";
+    public static final String URL_GET_DETAILS = "get_details";
     public static final String URL_GET_SESSIONS = "get_sessions";
     public static final String URL_SERVER_UP = "serverup";
     public static final String URL_PREVIEW_FORM = "preview_form";
     public static final String URL_DELETE_APPLICATION_DBS = "delete_application_dbs";
-    public static final String URL_QUESTIONS_FOR_INDEX = "questions_for_index";
     public static final String URL_NEXT_INDEX = "next_index";
     public static final String URL_PREV_INDEX = "prev_index";
+    public static final String URL_VALIDATE_FORM = "validate_form";
     // Debugger URLS
     public static final String URL_DEBUGGER_FORMATTED_QUESTIONS = "formatted_questions";
 
@@ -59,6 +62,8 @@ public class Constants {
     // Postgres tables
     public static final String POSTGRES_SESSION_TABLE_NAME = "formplayer_sessions";
     public static final String POSTGRES_TOKEN_TABLE_NAME = "django_session";
+    // Token table generated from django rest framework
+    public static final String POSTGRES_AUTH_TOKEN_TABLE_NAME = "authtoken_token";
     public static final String POSTGRES_USER_TABLE_NAME = "auth_user";
     public static final String POSTGRES_MENU_SESSION_TABLE_NAME = "menu_sessions";
 
@@ -66,4 +71,32 @@ public class Constants {
     public static final String COUCH_USERS_DB = "__users";
 
     public static final String POSTGRES_DJANGO_SESSION_ID = "sessionid";
+    public static final String ANONYMOUS_USERNAME = "anonymous_user";
+    public static final int ANONYMOUS_DJANGO_USERID = -1;
+    public static final String COMMCARE_USER_SUFFIX = "commcarehq.org";
+
+    public static final Set<Pattern> AUTH_WHITELIST = new HashSet<Pattern>(Arrays.asList(
+            Pattern.compile(Constants.URL_SERVER_UP),
+            Pattern.compile(Constants.URL_VALIDATE_FORM),
+            Pattern.compile("swagger.*"),
+            Pattern.compile("webjars/.*"),
+            Pattern.compile("configuration/.*"),
+            Pattern.compile("v2/.*")
+    ));
+
+    public static final int USER_LOCK_TIMEOUT = 120;
+    // 15 minutes in milliseconds
+    public static final int LOCK_DURATION = 60 * 15 * 1000;
+
+    // Datadog metrics
+    public static final String DATADOG_REQUESTS = "requests";
+    public static final String DATADOG_TIMINGS = "timings";
+
+    // Errors
+    public static final String DATADOG_ERRORS_APP_CONFIG = "errors.app_config";
+    public static final String DATADOG_ERRORS_EXTERNAL_REQUEST = "errors.external_request";
+    public static final String DATADOG_ERRORS_CRASH = "errors.crash";
+    // End Datadog metrics
+
+
 }

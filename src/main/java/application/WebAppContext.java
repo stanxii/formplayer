@@ -1,13 +1,17 @@
 package application;
 
-import aspects.LockAspect;
-import aspects.LoggingAspect;
-import org.springframework.context.annotation.Bean;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import aspects.*;
+import com.getsentry.raven.Raven;
+import com.getsentry.raven.RavenFactory;
+import com.getsentry.raven.event.BreadcrumbBuilder;
+import com.timgroup.statsd.NonBlockingStatsDClient;
+import com.timgroup.statsd.StatsDClient;
+import engine.FormplayerArchiveFileRoot;
+import installers.FormplayerInstallerFactory;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.HtmlEmail;
+import org.apache.tomcat.jdbc.pool.DataSource;
+import org.commcare.modern.reference.ArchiveFileRoot;
 import org.lightcouch.CouchDbClient;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +19,9 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.*;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.integration.redis.util.RedisLockRegistry;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.servlet.ViewResolver;
@@ -30,27 +37,23 @@ import repo.MenuSessionRepo;
 import repo.TokenRepo;
 import repo.impl.*;
 import services.*;
-import services.impl.FormattedQuestionsServiceImpl;
-import services.impl.InstallServiceImpl;
-import services.impl.SubmitServiceImpl;
-import services.impl.XFormServiceImpl;
+import services.impl.*;
 import util.Constants;
 
-import javax.annotation.PreDestroy;
-import javax.sql.DataSource;
-import java.sql.Driver;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 //have to exclude this to use two DataSources (HQ and Formplayer dbs)
 @EnableAutoConfiguration
 @Configuration
 @EnableWebMvc
-@ComponentScan(basePackages = {"application.*", "repo.*", "objects.*", "requests.*", "session.*"})
+@ComponentScan(basePackages = {"application.*", "repo.*", "objects.*", "requests.*", "session.*", "installers.*"})
 @EnableAspectJAutoProxy
 public class WebAppContext extends WebMvcConfigurerAdapter {
+
+    @Value("${commcarehq.environment}")
+    private String environment;
 
     @Value("${commcarehq.host}")
     private String hqHost;
@@ -85,10 +88,10 @@ public class WebAppContext extends WebMvcConfigurerAdapter {
     @Value("${smtp.port}")
     private int smtpPort;
 
-    @Value("${smtp.username}")
+    @Value("${smtp.username:}")
     private String smtpUsername;
 
-    @Value("${smtp.password}")
+    @Value("${smtp.password:}")
     private String smtpPassword;
 
     @Value("${smtp.from.address}")
@@ -118,7 +121,8 @@ public class WebAppContext extends WebMvcConfigurerAdapter {
     @Value("${couch.databaseName}")
     private String couchDatabaseName;
 
-    private final Log log = LogFactory.getLog(WebAppContext.class);
+    @Value("${sentry.dsn:}")
+    private String ravenDsn;
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
@@ -168,6 +172,15 @@ public class WebAppContext extends WebMvcConfigurerAdapter {
     @Bean
     public static PropertySourcesPlaceholderConfigurer propertiesResolver() {
         return new PropertySourcesPlaceholderConfigurer();
+    }
+
+    @Bean
+    public StatsDClient datadogStatsDClient() {
+        return new NonBlockingStatsDClient(
+                "formplayer.metrics",
+                "localhost",
+                8125
+        );
     }
 
     @Bean
@@ -224,7 +237,22 @@ public class WebAppContext extends WebMvcConfigurerAdapter {
     @Bean
     public RedisLockRegistry userLockRegistry() {
         JedisConnectionFactory jedisConnectionFactory = jedisConnFactory();
-        return new RedisLockRegistry(jedisConnectionFactory, "formplayer-user");
+        return new RedisLockRegistry(jedisConnectionFactory, "formplayer-user", Constants.LOCK_DURATION);
+    }
+
+    @Bean
+    public StringRedisTemplate redisTemplate() {
+        StringRedisTemplate template = new StringRedisTemplate(jedisConnFactory());
+        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, Long> redisTemplateLong() {
+        RedisTemplate template = new RedisTemplate<String, Long>();
+        template.setConnectionFactory(jedisConnFactory());
+        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        return template;
     }
 
     @Bean
@@ -232,7 +260,9 @@ public class WebAppContext extends WebMvcConfigurerAdapter {
         HtmlEmail message = new HtmlEmail();
         message.setFrom(smtpFromAddress);
         message.addTo(smtpToAddress);
-        message.setAuthentication(smtpUsername, smtpPassword);
+        if (smtpUsername != null &&  smtpPassword != null) {
+            message.setAuthentication(smtpUsername, smtpPassword);
+        }
         message.setHostName(smtpHost);
         message.setSmtpPort(smtpPort);
         return message;
@@ -275,8 +305,25 @@ public class WebAppContext extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public RestoreFactory restoreFactory(){
+    @Scope(value = "request", proxyMode = ScopedProxyMode.TARGET_CLASS)
+    public Raven raven() {
+        Map<String, String> data = new HashMap<String, String>();
+        data.put("environment", environment);
+        BreadcrumbBuilder builder = new BreadcrumbBuilder();
+        builder.setData(data);
+        return RavenFactory.ravenInstance(ravenDsn);
+    }
+
+    @Bean
+    @Scope(value = "request", proxyMode = ScopedProxyMode.TARGET_CLASS)
+    public RestoreFactory restoreFactory() {
         return new RestoreFactory();
+    }
+
+    @Bean
+    @Scope(value = "request", proxyMode = ScopedProxyMode.TARGET_CLASS)
+    public FormplayerStorageFactory storageFactory() {
+        return new FormplayerStorageFactory();
     }
 
     @Bean
@@ -295,23 +342,13 @@ public class WebAppContext extends WebMvcConfigurerAdapter {
 
     @Bean
     public NewFormResponseFactory newFormResponseFactory(){
-        return new NewFormResponseFactory(formSessionRepo(), xFormService(), restoreFactory());
+        return new NewFormResponseFactory();
     }
 
-    // Manually deregister drivers as prescribed here http://stackoverflow.com/questions/11872316/tomcat-guice-jdbc-memory-leak
-    @PreDestroy
-    public void deregisterDrivers(){
-        Enumeration<Driver> drivers = DriverManager.getDrivers();
-        while (drivers.hasMoreElements()) {
-            Driver driver = drivers.nextElement();
-            try {
-                DriverManager.deregisterDriver(driver);
-                log.info(String.format("deregistering jdbc driver: %s", driver));
-            } catch (SQLException e) {
-                log.warn(String.format("Error deregistering driver %s", driver), e);
-            }
-
-        }
+    @Bean
+    @Scope(value = "request", proxyMode = ScopedProxyMode.TARGET_CLASS)
+    FormplayerInstallerFactory installerFactory() {
+        return new FormplayerInstallerFactory();
     }
 
     @Bean
@@ -321,5 +358,35 @@ public class WebAppContext extends WebMvcConfigurerAdapter {
     @Bean
     public LoggingAspect loggingAspect() {
         return new LoggingAspect();
+    }
+
+    @Bean
+    public MetricsAspect metricsAspect() {
+        return new MetricsAspect();
+    }
+
+    @Bean
+    public UserRestoreAspect userRestoreAspect() {
+        return new UserRestoreAspect();
+    }
+
+    @Bean
+    public AppInstallAspect appInstallAspect() {
+        return new AppInstallAspect();
+    }
+
+    @Bean
+    public ArchiveFileRoot formplayerArchiveFileRoot() {
+        return new FormplayerArchiveFileRoot();
+    }
+
+    @Bean
+    public QueryRequester queryRequester() {
+        return new QueryRequesterImpl();
+    }
+
+    @Bean
+    public SyncRequester syncRequester() {
+        return new SyncRequesterImpl();
     }
 }

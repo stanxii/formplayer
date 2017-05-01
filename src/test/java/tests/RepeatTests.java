@@ -8,10 +8,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import utils.FileUtils;
 import utils.TestContext;
-
-import static org.mockito.Mockito.when;
 
 /**
  * Created by willpride on 1/14/16.
@@ -23,15 +20,13 @@ public class RepeatTests extends BaseTestClass{
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        when(restoreFactoryMock.getRestoreXml())
-                .thenReturn(FileUtils.getFile(this.getClass(), "test_restore.xml"));
         configureRestoreFactory("test", "test");
     }
 
     @Test
     public void testRepeat() throws Exception {
 
-        NewFormResponse newSessionResponse = startNewSession("requests/new_form/new_form.json", "xforms/repeat.xml");
+        NewFormResponse newSessionResponse = startNewForm("requests/new_form/new_form.json", "xforms/repeat.xml");
 
         String sessionId = newSessionResponse.getSessionId();
 

@@ -4,16 +4,13 @@ import beans.NewFormResponse;
 import beans.menus.CommandListResponseBean;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.commcare.api.persistence.SqlSandboxUtils;
+import sandbox.SqlSandboxUtils;
 import org.javarosa.core.services.storage.StorageManager;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import utils.FileUtils;
 import utils.TestContext;
-
-import static org.mockito.Mockito.when;
 
 /**
  * Created by willpride on 1/14/16.
@@ -68,7 +65,7 @@ public class InstallTests extends BaseTestClass {
         assert formSessionResponse.getTree().length == 7;
 
         SqlSandboxUtils.deleteDatabaseFolder("dbs");
-        StorageManager.forceClear();
+        StorageManager.instance().forceClear();
     }
 
 }

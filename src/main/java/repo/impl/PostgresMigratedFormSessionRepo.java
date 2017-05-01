@@ -19,7 +19,6 @@ import org.springframework.stereotype.Repository;
 import repo.FormSessionRepo;
 import services.RestoreFactory;
 import util.FormplayerDateUtils;
-import util.PrototypeUtils;
 import util.StringUtils;
 
 import javax.persistence.LockModeType;
@@ -35,7 +34,6 @@ import java.util.List;
  * Repo has read only access
  * In addition to reading from the database, this repository handles the migration including:
  *  - Parsing the old JSON blob into our POJO
- *  - Adding restoreXml since the old one didn't contain it
  *  - Adding the PostURL since the old one didn't contain it
  *  - Converting the formXml into a serialized version
  */
@@ -145,10 +143,6 @@ public class PostgresMigratedFormSessionRepo implements FormSessionRepo {
         SerializableFormSession session = loadSessionFromJson(instanceSession.getSessionJson());
         session.setDateOpened(FormplayerDateUtils.convertIsoToJavaDate(entrySession.getCreatedDate()));
         session.setId(entrySession.getSessionId());
-
-        if (session.getRestoreXml() == null) {
-            session.setRestoreXml(restoreFactory.getRestoreXml());
-        }
 
         if(session.getPostUrl() == null) {
             session.setPostUrl(
@@ -366,7 +360,10 @@ public class PostgresMigratedFormSessionRepo implements FormSessionRepo {
         session.setAsUser(null);
         session.setInstanceXml(sessionObject.getString("instance"));
         session.setFormXml(sessionObject.getString("xform"));
-        session.setInitLang(sessionObject.getString("init_lang"));
+        // default behavior of null locale just results in default
+        if (sessionObject.has("init_lang")) {
+            session.setInitLang(sessionObject.getString("init_lang"));
+        }
         session.setSequenceId(sessionObject.getInt("seq_id"));
         HashMap<String, String> sessionDataMap = new HashMap<>();
         session.setSessionData(sessionDataMap);

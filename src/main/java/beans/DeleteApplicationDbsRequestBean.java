@@ -15,7 +15,7 @@ public class DeleteApplicationDbsRequestBean extends AuthenticatedRequestBean {
     }
 
     public boolean clear() {
-        return deleteApplicationDbs(domain, username, appId);
+        return deleteApplicationDbs(domain, username, restoreAs, appId);
     }
 
     @JsonGetter(value = "app_id")
@@ -27,4 +27,10 @@ public class DeleteApplicationDbsRequestBean extends AuthenticatedRequestBean {
     public void setAppId(String appId) {
         this.appId = appId;
     }
+
+    @Override
+    public String toString() {
+        return "DeleteApplicationDbsRequestBean with appId=" + appId + ", parent " + super.toString();
+    }
+
 }

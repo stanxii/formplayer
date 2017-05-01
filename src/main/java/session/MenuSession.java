@@ -1,11 +1,12 @@
 package session;
 
 import auth.HqAuth;
+import engine.FormplayerConfigEngine;
 import hq.CaseAPIs;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.client.utils.URIBuilder;
-import org.commcare.api.persistence.UserSqlSandbox;
+import sandbox.UserSqlSandbox;
 import org.commcare.modern.database.TableBuilder;
 import org.commcare.modern.session.SessionWrapper;
 import org.commcare.session.CommCareSession;
@@ -13,7 +14,6 @@ import org.commcare.session.SessionFrame;
 import org.commcare.suite.model.FormIdDatum;
 import org.commcare.suite.model.SessionDatum;
 import org.commcare.util.CommCarePlatform;
-import org.commcare.util.engine.CommCareConfigEngine;
 import org.commcare.util.screen.*;
 import org.javarosa.core.model.FormDef;
 import org.javarosa.core.model.condition.EvaluationContext;
@@ -24,7 +24,6 @@ import org.javarosa.xpath.XPathException;
 import org.javarosa.xpath.XPathParseTool;
 import org.javarosa.xpath.expr.FunctionUtils;
 import org.javarosa.xpath.expr.XPathExpression;
-import org.javarosa.xpath.expr.XPathFuncExpr;
 import org.javarosa.xpath.parser.XPathSyntaxException;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.stereotype.Component;
@@ -33,9 +32,9 @@ import screens.FormplayerQueryScreen;
 import screens.FormplayerSyncScreen;
 import services.InstallService;
 import services.RestoreFactory;
-import util.ApplicationUtils;
 import util.Constants;
 import util.SessionUtils;
+import util.StringUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -43,7 +42,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 
@@ -57,7 +55,7 @@ import java.util.UUID;
 @EnableAutoConfiguration
 @Component
 public class MenuSession {
-    private CommCareConfigEngine engine;
+    private FormplayerConfigEngine engine;
     private UserSqlSandbox sandbox;
     private SessionWrapper sessionWrapper;
     private String installReference;
@@ -85,20 +83,16 @@ public class MenuSession {
         this.auth = auth;
 
         resolveInstallReference(installReference, appId, host);
-        this.engine = installService.configureApplication(
-                this.installReference,
-                this.username,
-                ApplicationUtils.getApplicationDBPath(this.domain, this.username, this.appId)
-        );
+        this.engine = installService.configureApplication(this.installReference);
 
-        this.sandbox = CaseAPIs.restoreIfNotExists(restoreFactory);
+        this.sandbox = CaseAPIs.restoreIfNotExists(restoreFactory, false);
 
-        this.sessionWrapper = new SessionWrapper(deserializeSession(engine.getPlatform(), session.getCommcareSession()),
+        this.sessionWrapper = new FormplayerSessionWrapper(deserializeSession(engine.getPlatform(), session.getCommcareSession()),
                 engine.getPlatform(), sandbox);
         SessionUtils.setLocale(this.locale);
         sessionWrapper.syncState();
         this.screen = getNextScreen();
-        this.appId = this.engine.getPlatform().getCurrentProfile().getUniqueId();
+        this.appId = session.getAppId();
     }
 
     public MenuSession(String username, String domain, String appId, String installReference, String locale,
@@ -107,20 +101,16 @@ public class MenuSession {
         this.username = TableBuilder.scrubName(username);
         this.domain = domain;
         this.auth = auth;
+        this.appId = appId;
         this.asUser = asUser;
         resolveInstallReference(installReference, appId, host);
-        this.engine = installService.configureApplication(
-                this.installReference,
-                this.username,
-                ApplicationUtils.getApplicationDBPath(domain, this.username, appId)
-        );
-        this.sandbox = CaseAPIs.restoreIfNotExists(restoreFactory);
-        this.sessionWrapper = new SessionWrapper(engine.getPlatform(), sandbox);
+        this.engine = installService.configureApplication(this.installReference);
+        this.sandbox = CaseAPIs.restoreIfNotExists(restoreFactory, false);
+        this.sessionWrapper = new FormplayerSessionWrapper(engine.getPlatform(), sandbox);
         this.locale = locale;
         SessionUtils.setLocale(this.locale);
         this.screen = getNextScreen();
         this.uuid = UUID.randomUUID().toString();
-        this.appId = this.engine.getPlatform().getCurrentProfile().getUniqueId();
         this.oneQuestionPerScreen = oneQuestionPerScreen;
     }
     
@@ -166,10 +156,16 @@ public class MenuSession {
         if(screen == null) {
             return false;
         }
-        boolean ret = screen.handleInputAndUpdateSession(sessionWrapper, input);
-        screen = getNextScreen();
-        log.info("Screen " + screen + " set to " + ret);
-        return true;
+        try {
+            boolean ret = screen.handleInputAndUpdateSession(sessionWrapper, input);
+            screen = getNextScreen();
+            log.info("Screen " + screen + " set to " + ret);
+            return true;
+        } catch(ArrayIndexOutOfBoundsException | NullPointerException e) {
+            throw new RuntimeException("Screen " + screen + "  handling input " + input +
+                    " threw exception " + e.getMessage() + ". Please try reloading this application" +
+                    " and if the problem persists please report a bug.", e);
+        }
     }
 
     public Screen getNextScreen() throws CommCareSessionException {
@@ -185,6 +181,9 @@ public class MenuSession {
         } else if (next.equals(SessionFrame.STATE_DATUM_VAL)) {
             EntityScreen entityScreen = new EntityScreen();
             entityScreen.init(sessionWrapper);
+            if (entityScreen.shouldBeSkipped()) {
+                return getNextScreen();
+            }
             return entityScreen;
         } else if (next.equalsIgnoreCase(SessionFrame.STATE_DATUM_COMPUTED)) {
             computeDatum();
@@ -194,7 +193,9 @@ public class MenuSession {
             queryScreen.init(sessionWrapper);
             return queryScreen;
         } else if(next.equalsIgnoreCase(SessionFrame.STATE_SYNC_REQUEST)) {
-            FormplayerSyncScreen syncScreen = new FormplayerSyncScreen();
+            String username = asUser != null ?
+                    StringUtils.getFullUsername(asUser, domain, Constants.COMMCARE_USER_SUFFIX) : null;
+            FormplayerSyncScreen syncScreen = new FormplayerSyncScreen(username);
             syncScreen.init(sessionWrapper);
             return syncScreen;
         }
@@ -237,20 +238,18 @@ public class MenuSession {
         String formXmlns = sessionWrapper.getForm();
         FormDef formDef = engine.loadFormByXmlns(formXmlns);
         HashMap<String, String> sessionData = getSessionData();
-        String postUrl = new PropertyManager().getSingularProperty("PostURL");
+        String postUrl = PropertyManager.instance().getSingularProperty("PostURL");
         return new FormSession(sandbox, formDef, username, domain,
                 sessionData, postUrl, locale, uuid,
-                null, oneQuestionPerScreen, asUser);
+                null, oneQuestionPerScreen,
+                asUser, appId, null);
     }
 
-    public FormSession reloadSession(FormSession oldSession) throws Exception {
-        String formXmlns = oldSession.getXmlns();
+    public void reloadSession(FormSession formSession) throws Exception {
+        String formXmlns = formSession.getXmlns();
         FormDef formDef = engine.loadFormByXmlns(formXmlns);
-        String postUrl = new PropertyManager().getSingularProperty("PostURL");
-        return new FormSession(sandbox, formDef, username, domain,
-                oldSession.getSessionData(), postUrl, locale, oldSession.getMenuSessionId(),
-                oldSession.getInstanceXml(), oldSession.getOneQuestionPerScreen(), asUser,
-                oldSession.getSessionId(), oldSession.getCurrentIndex());
+        String postUrl = PropertyManager.instance().getSingularProperty("PostURL");
+        formSession.reload(formDef, postUrl);
     }
 
     private byte[] serializeSession(CommCareSession session){

@@ -1,6 +1,7 @@
 package repo.impl;
 
 import exceptions.FormNotFoundException;
+import objects.FunctionHandler;
 import objects.SerializableFormSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -10,7 +11,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import repo.FormSessionRepo;
-import services.RestoreFactory;
 import util.Constants;
 
 import javax.persistence.LockModeType;
@@ -33,13 +33,13 @@ public class PostgresFormSessionRepo implements FormSessionRepo {
     @Qualifier("formplayerTemplate")
     private JdbcTemplate jdbcTemplate;
 
-    @Autowired
-    private RestoreFactory restoreFactory;
-
     @Override
     public List<SerializableFormSession> findUserSessions(String username) {
         List<SerializableFormSession> sessions = this.jdbcTemplate.query(
-                replaceTableName("SELECT * FROM %s WHERE username = ? ORDER BY dateOpened ASC"),
+                replaceTableName(
+                        "SELECT *, dateopened::timestamptz as dateopened_timestamp " +
+                        "FROM %s WHERE username = ? ORDER BY dateopened_timestamp DESC"
+                ),
                 new Object[] {username},
                 new SessionMapper());
         return sessions;
@@ -71,36 +71,82 @@ public class PostgresFormSessionRepo implements FormSessionRepo {
     public <S extends SerializableFormSession> S save(S session) {
 
         byte[] sessionDataBytes = writeToBytes(session.getSessionData());
+        byte[] functionContextBytes = writeToBytes(session.getFunctionContext());
 
         int sessionCount = this.jdbcTemplate.queryForObject(
                 replaceTableName("select count(*) from %s where id = ?"), Integer.class, session.getId());
 
         if(sessionCount > 0){
             String query = replaceTableName("UPDATE %s SET instanceXml = ?, sessionData = ?, " +
-                    "sequenceId = ?, currentIndex = ?, postUrl = ?, restoreXml = ? WHERE id = ?");
-            this.jdbcTemplate.update(query,  new Object[] {session.getInstanceXml(),
-                    sessionDataBytes, session.getSequenceId(), session.getCurrentIndex(),
-                    session.getPostUrl(), session.getRestoreXml(), session.getId()},
-                    new int[] {Types.VARCHAR, Types.BINARY, Types.VARCHAR, Types.VARCHAR,
-                            Types.VARCHAR, Types.VARCHAR, Types.VARCHAR});
+                    "sequenceId = ?, currentIndex = ?, postUrl = ? WHERE id = ?");
+            this.jdbcTemplate.update(query,
+                    new Object[] {
+                            session.getInstanceXml(),
+                            sessionDataBytes,
+                            session.getSequenceId(),
+                            session.getCurrentIndex(),
+                            session.getPostUrl(),
+                            session.getId()
+                    },
+                    new int[] {
+                            Types.VARCHAR,
+                            Types.BINARY,
+                            Types.VARCHAR,
+                            Types.VARCHAR,
+                            Types.VARCHAR,
+                            Types.VARCHAR
+                    }
+            );
             return session;
         }
 
         String query = replaceTableName("INSERT into %s " +
                 "(id, instanceXml, formXml, " +
-                "restoreXml, username, initLang, sequenceId, " +
+                "username, initLang, sequenceId, " +
                 "domain, postUrl, sessionData, menu_session_id," +
-                "title, dateOpened, oneQuestionPerScreen, currentIndex, asUser) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        this.jdbcTemplate.update(query,  new Object[] {session.getId(), session.getInstanceXml(), session.getFormXml(),
-                session.getRestoreXml(), session.getUsername(), session.getInitLang(), session.getSequenceId(),
-                session.getDomain(), session.getPostUrl(), sessionDataBytes, session.getMenuSessionId(),
-                session.getTitle(), session.getDateOpened(),
-                session.getOneQuestionPerScreen(), session.getCurrentIndex(), session.getAsUser()}, new int[] {
-                Types.VARCHAR, Types.VARCHAR, Types.VARCHAR, Types.VARCHAR, Types.VARCHAR,
-                Types.VARCHAR, Types.VARCHAR, Types.VARCHAR, Types.VARCHAR, Types.BINARY,
-                Types.VARCHAR, Types.VARCHAR, Types.VARCHAR, Types.BOOLEAN, Types.VARCHAR,
-                Types.VARCHAR});
+                "title, dateOpened, oneQuestionPerScreen, currentIndex, asUser, appid, functioncontext) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        this.jdbcTemplate.update(
+                query,
+                new Object[] {
+                        session.getId(),
+                        session.getInstanceXml(),
+                        session.getFormXml(),
+                        session.getUsername(),
+                        session.getInitLang(),
+                        session.getSequenceId(),
+                        session.getDomain(),
+                        session.getPostUrl(),
+                        sessionDataBytes,
+                        session.getMenuSessionId(),
+                        session.getTitle(),
+                        session.getDateOpened(),
+                        session.getOneQuestionPerScreen(),
+                        session.getCurrentIndex(),
+                        session.getAsUser(),
+                        session.getAppId(),
+                        functionContextBytes
+                },
+                new int[] {
+                        Types.VARCHAR,
+                        Types.VARCHAR,
+                        Types.VARCHAR,
+                        Types.VARCHAR,
+                        Types.VARCHAR,
+                        Types.VARCHAR,
+                        Types.VARCHAR,
+                        Types.VARCHAR,
+                        Types.BINARY,
+                        Types.VARCHAR,
+                        Types.VARCHAR,
+                        Types.VARCHAR,
+                        Types.BOOLEAN,
+                        Types.VARCHAR,
+                        Types.VARCHAR,
+                        Types.VARCHAR,
+                        Types.BINARY
+                }
+        );
         return session;
     }
 
@@ -182,7 +228,6 @@ public class PostgresFormSessionRepo implements FormSessionRepo {
             session.setId(rs.getString("id"));
             session.setInstanceXml(rs.getString("instanceXml"));
             session.setFormXml(rs.getString("formXml"));
-            session.setRestoreXml(rs.getString("restoreXml"));
             session.setUsername(rs.getString("username"));
             session.setInitLang(rs.getString("initLang"));
             session.setSequenceId(Integer.parseInt(rs.getString("sequenceId")));
@@ -194,10 +239,7 @@ public class PostgresFormSessionRepo implements FormSessionRepo {
             session.setOneQuestionPerScreen(rs.getBoolean("oneQuestionPerScreen"));
             session.setCurrentIndex(rs.getString("currentIndex"));
             session.setAsUser(rs.getString("asUser"));
-
-            if(session.getRestoreXml() == null) {
-                session.setRestoreXml(restoreFactory.getRestoreXml());
-            }
+            session.setAppId(rs.getString("appid"));
 
             byte[] st = (byte[]) rs.getObject("sessionData");
             if (st != null) {
@@ -213,6 +255,22 @@ public class PostgresFormSessionRepo implements FormSessionRepo {
                     throw new SQLException(e);
                 }
             }
+
+            byte[] fc = (byte[]) rs.getObject("functionContext");
+            if (fc != null) {
+                ByteArrayInputStream byteInputStream = new ByteArrayInputStream(fc);
+                ObjectInputStream objectInputStream;
+                try {
+                    objectInputStream = new ObjectInputStream(byteInputStream);
+                    Map<String, FunctionHandler[]> functionContext = (HashMap) objectInputStream.readObject();
+                    session.setFunctionContext(functionContext);
+                } catch (IOException e) {
+                    throw new SQLException(e);
+                } catch (ClassNotFoundException e) {
+                    throw new SQLException(e);
+                }
+            }
+
             return session;
         }
     }

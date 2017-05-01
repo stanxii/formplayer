@@ -1,9 +1,6 @@
 package beans;
 
-import beans.menus.BaseResponseBean;
-import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonSetter;
 
 import java.util.Arrays;
 
@@ -38,7 +35,7 @@ public class FormEntryResponseBean extends SessionResponseBean{
 
     @Override
     public String toString(){
-        return "FormEntryResponseBean: [tree=" + Arrays.toString(tree) + ", status=" + status + ", seq_id: " + sequenceId
+        return "FormEntryResponseBean: [status=" + status + ", seq_id: " + sequenceId
                 + ( status != null && status.equals("error") ? ", reason=" + reason + ", type=" + type : "") +  "]";
     }
 

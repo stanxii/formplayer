@@ -1,14 +1,15 @@
 package beans;
 
 import objects.SerializableFormSession;
-import session.FormSession;
+import sandbox.SqliteIndexedStorageUtility;
+import org.commcare.cases.model.Case;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 /**
- * Response containing a list of the user's incomplete form sessions
+ * Response containing a list of the user's incomplete form sessions.
+ * Requires the Case storage in order to lookup case names for display
  */
 public class GetSessionsResponse {
 
@@ -16,10 +17,10 @@ public class GetSessionsResponse {
 
     public GetSessionsResponse(){}
 
-    public GetSessionsResponse(ArrayList<FormSession> sessionList){
+    public GetSessionsResponse(SqliteIndexedStorageUtility<Case> caseStorage, ArrayList<SerializableFormSession> sessionList){
         sessions = new SessionListItem[sessionList.size()];
-        for(int i = 0; i < sessionList.size(); i++){
-            sessions[i] = new SessionListItem(sessionList.get(i));
+        for (int i = 0; i < sessionList.size(); i++){
+            sessions[i] = new SessionListItem(caseStorage, sessionList.get(i));
         }
     }
 

@@ -1,14 +1,20 @@
 package application;
 
+import auth.DjangoAuth;
+import auth.HqAuth;
+import auth.TokenAuth;
 import beans.NewFormResponse;
 import beans.exceptions.ExceptionResponseBean;
 import beans.exceptions.HTMLExceptionResponseBean;
 import beans.exceptions.RetryExceptionResponseBean;
 import beans.menus.*;
-import exceptions.ApplicationConfigException;
-import exceptions.AsyncRetryException;
-import exceptions.FormNotFoundException;
-import exceptions.FormattedApplicationConfigException;
+import com.getsentry.raven.Raven;
+import com.getsentry.raven.event.Event;
+import com.getsentry.raven.event.EventBuilder;
+import com.getsentry.raven.event.interfaces.ExceptionInterface;
+import com.timgroup.statsd.StatsDClient;
+import exceptions.*;
+import hq.models.PostgresUser;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
@@ -18,14 +24,19 @@ import org.apache.commons.mail.HtmlEmail;
 import org.commcare.core.process.CommCareInstanceInitializer;
 import org.commcare.modern.models.RecordTooLargeException;
 import org.commcare.modern.session.SessionWrapper;
+import org.commcare.resources.model.UnresolvedResourceException;
 import org.commcare.session.SessionFrame;
 import org.commcare.suite.model.Detail;
 import org.commcare.suite.model.EntityDatum;
 import org.commcare.suite.model.StackFrameStep;
 import org.commcare.util.screen.*;
+import org.commcare.util.screen.CommCareSessionException;
+import org.commcare.util.screen.Screen;
 import org.javarosa.core.model.condition.EvaluationContext;
 import org.javarosa.core.model.instance.TreeReference;
+import org.javarosa.xml.util.InvalidStructureException;
 import org.javarosa.xpath.XPathException;
+import org.javarosa.xpath.XPathTypeMismatchException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -36,14 +47,15 @@ import org.springframework.web.client.HttpClientErrorException;
 import repo.FormSessionRepo;
 import repo.MenuSessionRepo;
 import repo.SerializableMenuSession;
+import repo.impl.PostgresUserRepo;
 import screens.FormplayerQueryScreen;
+import services.FormplayerStorageFactory;
 import services.InstallService;
 import services.NewFormResponseFactory;
 import services.RestoreFactory;
 import session.FormSession;
 import session.MenuSession;
-import util.FormplayerHttpRequest;
-import util.RequestUtils;
+import util.*;
 
 import java.io.IOException;
 import java.text.DateFormat;
@@ -75,6 +87,15 @@ public abstract class AbstractBaseController {
     @Autowired
     protected NewFormResponseFactory newFormResponseFactory;
 
+    @Autowired
+    protected FormplayerStorageFactory storageFactory;
+
+    @Autowired
+    protected StatsDClient datadogStatsDClient;
+
+    @Autowired
+    PostgresUserRepo postgresUserRepo;
+
     @Value("${commcarehq.host}")
     private String hqHost;
 
@@ -98,6 +119,17 @@ public abstract class AbstractBaseController {
         return getNextMenu(menuSession, 0, "");
     }
 
+    protected HqAuth getAuthHeaders(String domain, String username, String sessionToken) {
+        HqAuth auth;
+        if (UserUtils.isAnonymous(domain, username)) {
+            PostgresUser postgresUser = postgresUserRepo.getUserByUsername(username);
+            auth = new TokenAuth(postgresUser.getAuthToken());
+        } else {
+            auth = new DjangoAuth(sessionToken);
+        }
+        return auth;
+    }
+
     protected BaseResponseBean getNextMenu(MenuSession menuSession,
                                            int offset,
                                            String searchText) throws Exception {
@@ -105,12 +137,13 @@ public abstract class AbstractBaseController {
         // If the nextScreen is null, that means we are heading into
         // form entry and there isn't a screen title
         if (nextScreen == null) {
-            return getNextMenu(menuSession, offset, searchText, null);
+            return getNextMenu(menuSession, null, offset, searchText, null);
         }
-        return getNextMenu(menuSession, offset, searchText, new String[] {nextScreen.getScreenTitle()});
+        return getNextMenu(menuSession, null, offset, searchText, new String[] {nextScreen.getScreenTitle()});
     }
 
     protected BaseResponseBean getNextMenu(MenuSession menuSession,
+                                           String detailSelection,
                                            int offset,
                                            String searchText,
                                            String[] breadcrumbs) throws Exception {
@@ -121,7 +154,9 @@ public abstract class AbstractBaseController {
         // No next menu screen? Start form entry!
         if (nextScreen == null) {
             if(menuSession.getSessionWrapper().getForm() != null) {
-                return generateFormEntryScreen(menuSession);
+                NewFormResponse formResponseBean = generateFormEntryScreen(menuSession);
+                formResponseBean.setBreadcrumbs(breadcrumbs);
+                return formResponseBean;
             } else{
                 return null;
             }
@@ -135,8 +170,13 @@ public abstract class AbstractBaseController {
             }
             // We're looking at a case list or detail screen
             else if (nextScreen instanceof EntityScreen) {
-                menuResponseBean = generateEntityScreen((EntityScreen) nextScreen, offset, searchText,
-                        menuSession.getId());
+                menuResponseBean = generateEntityScreen(
+                        (EntityScreen) nextScreen,
+                        detailSelection,
+                        offset,
+                        searchText,
+                        menuSession.getId()
+                );
             } else if(nextScreen instanceof FormplayerQueryScreen){
                     menuResponseBean = generateQueryScreen((QueryScreen) nextScreen, menuSession.getSessionWrapper());
             } else {
@@ -206,16 +246,17 @@ public abstract class AbstractBaseController {
         return new CommandListResponseBean(nextScreen, session, menuSessionId);
     }
 
-    private EntityListResponse generateEntityScreen(EntityScreen nextScreen, int offset, String searchText,
+    private EntityListResponse generateEntityScreen(EntityScreen nextScreen, String detailSelection, int offset, String searchText,
                                                     String menuSessionId) {
-        return new EntityListResponse(nextScreen, offset, searchText, menuSessionId);
+        return new EntityListResponse(nextScreen, detailSelection, offset, searchText, menuSessionId);
     }
 
     private NewFormResponse generateFormEntryScreen(MenuSession menuSession) throws Exception {
         FormSession formEntrySession = menuSession.getFormEntrySession();
         menuSessionRepo.save(new SerializableMenuSession(menuSession));
+        NewFormResponse response = new NewFormResponse(formEntrySession);
         formSessionRepo.save(formEntrySession.serialize());
-        return new NewFormResponse(formEntrySession);
+        return response;
     }
 
     /**
@@ -226,12 +267,29 @@ public abstract class AbstractBaseController {
             CommCareInstanceInitializer.FixtureInitializationException.class,
             CommCareSessionException.class,
             FormNotFoundException.class,
-            RecordTooLargeException.class})
+            RecordTooLargeException.class,
+            InvalidStructureException.class,
+            UnresolvedResourceRuntimeException.class})
     @ResponseBody
-    public ExceptionResponseBean handleApplicationError(FormplayerHttpRequest req, Exception exception) {
-        log.error("Request: " + req.getRequestURL() + " raised " + exception);
+    public ExceptionResponseBean handleApplicationError(FormplayerHttpRequest request, Exception exception) {
+        log.error("Request: " + request.getRequestURL() + " raised " + exception);
+        incrementDatadogCounter(Constants.DATADOG_ERRORS_APP_CONFIG, request);
+        EventBuilder eventBuilder = new EventBuilder()
+                .withMessage("Application Configuration Error")
+                .withLevel(Event.Level.INFO)
+                .withSentryInterface(new ExceptionInterface(exception));
+        SentryUtils.sendRavenEvent(eventBuilder);
+        return getPrettyExceptionResponse(exception, request);
+    }
 
-        return new ExceptionResponseBean(exception.getMessage(), req.getRequestURL().toString());
+    private ExceptionResponseBean getPrettyExceptionResponse(Exception exception, FormplayerHttpRequest request) {
+        String message = exception.getMessage();
+        if (exception instanceof XPathTypeMismatchException && message.contains("instance(groups)")) {
+            message = "The case sharing settings for your user are incorrect. " +
+                    "This user must be in exactly one case sharing group. " +
+                    "Please contact your supervisor.";
+        }
+        return new ExceptionResponseBean(message, request.getRequestURL().toString());
     }
 
     /**
@@ -240,6 +298,7 @@ public abstract class AbstractBaseController {
     @ExceptionHandler({HttpClientErrorException.class})
     @ResponseBody
     public ExceptionResponseBean handleHttpRequestError(FormplayerHttpRequest req, HttpClientErrorException exception) {
+        incrementDatadogCounter(Constants.DATADOG_ERRORS_EXTERNAL_REQUEST, req);
         return new ExceptionResponseBean(exception.getResponseBodyAsString(), req.getRequestURL().toString());
     }
 
@@ -262,6 +321,7 @@ public abstract class AbstractBaseController {
     @ResponseBody
     public HTMLExceptionResponseBean handleFormattedApplicationError(FormplayerHttpRequest req, Exception exception) {
         log.error("Request: " + req.getRequestURL() + " raised " + exception);
+        incrementDatadogCounter(Constants.DATADOG_ERRORS_APP_CONFIG, req);
 
         return new HTMLExceptionResponseBean(exception.getMessage(), req.getRequestURL().toString());
     }
@@ -270,7 +330,9 @@ public abstract class AbstractBaseController {
     @ResponseBody
     public ExceptionResponseBean handleError(FormplayerHttpRequest req, Exception exception) {
         log.error("Request: " + req.getRequestURL() + " raised " + exception);
+        incrementDatadogCounter(Constants.DATADOG_ERRORS_CRASH, req);
         exception.printStackTrace();
+        SentryUtils.sendRavenException(exception);
         try {
             sendExceptionEmail(req, exception);
         } catch (Exception e) {
@@ -278,6 +340,23 @@ public abstract class AbstractBaseController {
             log.error("Unable to send email");
         }
         return new ExceptionResponseBean(exception.getMessage(), req.getRequestURL().toString());
+    }
+
+    private void incrementDatadogCounter(String metric, FormplayerHttpRequest req) {
+        String user = "unknown";
+        String domain = "unknown";
+        if (req.getCouchUser() != null) {
+            user = req.getCouchUser().getUsername();
+        }
+        if (req.getDomain() != null) {
+            domain = req.getDomain();
+        }
+        datadogStatsDClient.increment(
+                metric,
+                "domain:" + domain,
+                "user:" + user,
+                "request:" + req.getRequestURL()
+        );
     }
 
     private void sendExceptionEmail(FormplayerHttpRequest req, Exception exception) {

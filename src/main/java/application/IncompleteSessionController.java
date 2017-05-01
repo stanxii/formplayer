@@ -1,7 +1,9 @@
 package application;
 
 import annotations.UserLock;
+import annotations.UserRestore;
 import auth.DjangoAuth;
+import auth.HqAuth;
 import beans.*;
 import exceptions.FormNotFoundException;
 import io.swagger.annotations.Api;
@@ -20,8 +22,10 @@ import repo.FormSessionRepo;
 import session.FormSession;
 import util.Constants;
 
-import java.util.*;
-import java.util.concurrent.locks.Lock;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Controller class (API endpoint) containing all incomplete session management commands
@@ -44,10 +48,10 @@ public class IncompleteSessionController extends AbstractBaseController{
     @ApiOperation(value = "Open an incomplete form session")
     @RequestMapping(value = Constants.URL_INCOMPLETE_SESSION , method = RequestMethod.POST)
     @UserLock
+    @UserRestore
     public NewFormResponse openIncompleteForm(@RequestBody IncompleteSessionRequestBean incompleteSessionRequestBean,
                                               @CookieValue(Constants.POSTGRES_DJANGO_SESSION_ID) String authToken) throws Exception {
         SerializableFormSession session;
-        restoreFactory.configure(incompleteSessionRequestBean, new DjangoAuth(authToken));
         try {
             session = formSessionRepo.findOneWrapped(incompleteSessionRequestBean.getSessionId());
         } catch(FormNotFoundException e) {
@@ -61,11 +65,10 @@ public class IncompleteSessionController extends AbstractBaseController{
 
     @ApiOperation(value = "Get a list of the current user's sessions")
     @RequestMapping(value = Constants.URL_GET_SESSIONS, method = RequestMethod.POST)
+    @UserRestore
     public GetSessionsResponse getSessions(@RequestBody GetSessionsBean getSessionRequest,
                                            @CookieValue(Constants.POSTGRES_DJANGO_SESSION_ID) String authToken) throws Exception {
         String scrubbedUsername = TableBuilder.scrubName(getSessionRequest.getUsername());
-
-        restoreFactory.configure(getSessionRequest, new DjangoAuth(authToken));
 
         // Old CloudCare doesn't use scrubbed usernames
         List<SerializableFormSession> migratedSessions = migratedFormSessionRepo.findUserSessions(
@@ -73,37 +76,26 @@ public class IncompleteSessionController extends AbstractBaseController{
 
         List<SerializableFormSession> formplayerSessions = formSessionRepo.findUserSessions(scrubbedUsername);
 
-        ArrayList<FormSession> formSessions = new ArrayList<>();
+        ArrayList<SerializableFormSession> sessions = new ArrayList<>();
         Set<String> formplayerSessionIds = new HashSet<>();
 
-        for (int i = 0; i < formplayerSessions.size(); i++) {
-            SerializableFormSession serializableFormSession = formplayerSessions.get(i);
-            try {
-                formSessions.add(new FormSession(serializableFormSession));
-                formplayerSessionIds.add(serializableFormSession.getId());
-            } catch(DeserializationException e) {
-                log.error("Couldn't load form " + serializableFormSession + " with exception " + e);
-            }
+        for (SerializableFormSession serializableFormSession : formplayerSessions) {
+            sessions.add(serializableFormSession);
+            formplayerSessionIds.add(serializableFormSession.getId());
         }
 
         if (migratedSessions.size() > 0) {
-
-            for (int i = 0; i < migratedSessions.size(); i++) {
+            for (SerializableFormSession migratedSession : migratedSessions) {
                 // If we already have this session in the formplayer repo, skip it
-                if (formplayerSessionIds.contains(migratedSessions.get(i).getId())) {
+                if (formplayerSessionIds.contains(migratedSession.getId())) {
                     continue;
                 }
-                try {
-                    SerializableFormSession serialSession = migratedSessions.get(i);
-                    formSessions.add(new FormSession(serialSession));
-                } catch (Exception e) {
-                    // I think let's not crash on this.
-                    log.error("Couldn't add session " + migratedSessions.get(i) + " with exception " + e);
-                }
+                SerializableFormSession serialSession = migratedSession;
+                sessions.add(serialSession);
             }
         }
 
-        return new GetSessionsResponse(formSessions);
+        return new GetSessionsResponse(restoreFactory.getSqlSandbox().getCaseStorage(), sessions);
     }
 
     @ApiOperation(value = "Delete an incomplete form session")

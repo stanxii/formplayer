@@ -1,7 +1,5 @@
 package objects;
 
-import hq.CaseAPIs;
-
 import javax.persistence.Entity;
 import javax.persistence.Table;
 import java.io.Serializable;
@@ -16,7 +14,6 @@ public class SerializableFormSession implements Serializable{
     private String id;
     private String instanceXml;
     private String formXml;
-    private String restoreXml;
     private String username;
     private String initLang;
     private int sequenceId;
@@ -29,6 +26,8 @@ public class SerializableFormSession implements Serializable{
     private boolean oneQuestionPerScreen;
     private String asUser;
     private String currentIndex = "0";
+    private String appId;
+    private Map<String, FunctionHandler[]> functionContext;
 
     public String getInstanceXml() {
         return instanceXml;
@@ -76,14 +75,6 @@ public class SerializableFormSession implements Serializable{
 
     public void setUsername(String username) {
         this.username = username;
-    }
-
-    public String getRestoreXml() {
-        return restoreXml;
-    }
-
-    public void setRestoreXml(String restoreXml){
-        this.restoreXml = restoreXml;
     }
 
     public String getInitLang() {
@@ -172,5 +163,21 @@ public class SerializableFormSession implements Serializable{
 
     public void setAsUser(String asUser) {
         this.asUser = asUser;
+    }
+
+    public String getAppId() {
+        return appId;
+    }
+
+    public void setAppId(String appId) {
+        this.appId = appId;
+    }
+
+    public Map<String, FunctionHandler[]> getFunctionContext() {
+        return functionContext;
+    }
+
+    public void setFunctionContext(Map<String, FunctionHandler[]> functionContext) {
+        this.functionContext = functionContext;
     }
 }
