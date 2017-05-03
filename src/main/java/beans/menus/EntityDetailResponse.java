@@ -20,7 +20,6 @@ public class EntityDetailResponse {
     protected Style[] styles;
     protected String[] headers;
     protected String title;
-    protected boolean isUseNodeset;
 
     private CaseTileConfiguration caseTileConfiguration;
 
@@ -53,7 +52,6 @@ public class EntityDetailResponse {
         this.styles = EntityListResponse.processStyles(detail);
         Pair<String[], int[]> pair = EntityListResponse.processHeader(detail, ec);
         setHeaders(pair.first);
-        setUseNodeset(true);
     }
 
     protected void processCaseTiles(Detail shortDetail) {
@@ -101,14 +99,6 @@ public class EntityDetailResponse {
 
     public void setTitle(String title) {
         this.title = title;
-    }
-
-    public boolean isUseNodeset() {
-        return isUseNodeset;
-    }
-
-    public void setUseNodeset(boolean useNodeset) {
-        isUseNodeset = useNodeset;
     }
 
     public EntityBean[] getEntities() {
