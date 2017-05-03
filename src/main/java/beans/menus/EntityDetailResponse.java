@@ -1,9 +1,7 @@
 package beans.menus;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.commcare.modern.util.Pair;
 import org.commcare.suite.model.Detail;
-import org.commcare.suite.model.DetailField;
 import org.commcare.suite.model.EntityDatum;
 import org.commcare.util.screen.EntityDetailSubscreen;
 import org.javarosa.core.model.condition.EvaluationContext;
@@ -16,7 +14,6 @@ import java.util.Vector;
 /**
  * Represents one detail tab in a case details page.
  */
-@JsonIgnoreProperties
 public class EntityDetailResponse {
     protected Object[] details;
     private EntityBean[] entities;
@@ -26,27 +23,27 @@ public class EntityDetailResponse {
     protected boolean isUseNodeset;
 
     private boolean usesCaseTiles;
+
     private int maxWidth;
     private int maxHeight;
     private int numEntitiesPerRow;
     private Tile[] tiles;
     private boolean useUniformUnits;
 
-    public EntityDetailResponse() {
-    }
+    public EntityDetailResponse() {}
 
     public EntityDetailResponse(EntityDetailSubscreen entityScreen, String title) {
         this.title = title;
         this.details = entityScreen.getData();
         this.headers = entityScreen.getHeaders();
-        this.styles = processStyles(entityScreen.getDetail());
+        this.styles = EntityListResponse.processStyles(entityScreen.getDetail());
     }
 
     // Constructor used for persistent case tile
     public EntityDetailResponse(Detail detail, EvaluationContext ec) {
         this(new EntityDetailSubscreen(0, detail, ec, new String[]{}), "Details");
         processCaseTiles(detail);
-        processStyles(detail);
+        EntityListResponse.processStyles(detail);
     }
 
     // Constructor used for detail with nodeset
@@ -59,82 +56,23 @@ public class EntityDetailResponse {
         this.entities = new EntityBean[entityList.size()];
         entityList.toArray(this.entities);
         this.title = title;
-        this.styles = processStyles(detail);
+        this.styles = EntityListResponse.processStyles(detail);
         Pair<String[], int[]> pair = EntityListResponse.processHeader(detail, ec);
         setHeaders(pair.first);
         setUseNodeset(true);
     }
 
-    private void processCaseTiles(Detail shortDetail) {
-        DetailField[] fields = shortDetail.getFields();
-        if (!shortDetail.usesEntityTileView()) {
+    protected void processCaseTiles(Detail shortDetail) {
+        CaseTileConfiguration configuration = CaseTileConfiguration.buildCaseTileConfiguration(shortDetail);
+        if (configuration == null) {
             return;
         }
-        tiles = new Tile[fields.length];
         setUsesCaseTiles(true);
-        for (int i = 0; i < fields.length; i++) {
-            if (fields[i].isCaseTileField()) {
-                tiles[i] = new Tile(fields[i]);
-            } else {
-                tiles[i] = null;
-            }
-        }
-        numEntitiesPerRow = shortDetail.getNumEntitiesToDisplayPerRow();
-        Pair<Integer, Integer> maxWidthHeight = shortDetail.getMaxWidthHeight();
-        maxWidth = maxWidthHeight.first;
-        maxHeight = maxWidthHeight.second;
-        useUniformUnits = shortDetail.useUniformUnitsInCaseTile();
-    }
-
-    protected static Style[] processStyles(Detail detail) {
-        DetailField[] fields = detail.getFields();
-        Style[] styles = new Style[fields.length];
-        int i = 0;
-        for (DetailField field : fields) {
-            Style style = new Style(field);
-            styles[i] = style;
-            i++;
-        }
-        return styles;
-    }
-
-    public Object[] getDetails() {
-        return details;
-    }
-
-    public void setDetails(Object[] data) {
-        this.details = data;
-    }
-
-    public Style[] getStyles() {
-        return styles;
-    }
-
-    public void setStyles(Style[] styles) {
-        this.styles = styles;
-    }
-
-    public String[] getHeaders() {
-        return headers;
-    }
-
-    public void setHeaders(String[] headers) {
-        this.headers = headers;
-    }
-
-    @Override
-    public String toString() {
-        return "EntityDetailResponse [details=" + Arrays.toString(details)
-                + ", styles=" + Arrays.toString(styles)
-                + ", headers=" + Arrays.toString(headers) + "]";
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
+        setMaxWidth(configuration.getMaxWidth());
+        setMaxHeight(configuration.getMaxHeight());
+        setNumEntitiesPerRow(configuration.getNumEntitiesPerRow());
+        setTiles(configuration.getTiles());
+        setUseUniformUnits(configuration.isUseUniformUnits());
     }
 
     public boolean isUsesCaseTiles() {
@@ -183,6 +121,45 @@ public class EntityDetailResponse {
 
     public void setUseUniformUnits(boolean useUniformUnits) {
         this.useUniformUnits = useUniformUnits;
+    }
+
+    public Object[] getDetails() {
+        return details;
+    }
+
+    public void setDetails(Object[] data) {
+        this.details = data;
+    }
+
+    public Style[] getStyles() {
+        return styles;
+    }
+
+    public void setStyles(Style[] styles) {
+        this.styles = styles;
+    }
+
+    public String[] getHeaders() {
+        return headers;
+    }
+
+    public void setHeaders(String[] headers) {
+        this.headers = headers;
+    }
+
+    @Override
+    public String toString() {
+        return "EntityDetailResponse [details=" + Arrays.toString(details)
+                + ", styles=" + Arrays.toString(styles)
+                + ", headers=" + Arrays.toString(headers) + "]";
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public boolean isUseNodeset() {

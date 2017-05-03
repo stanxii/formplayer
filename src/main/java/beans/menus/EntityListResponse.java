@@ -83,25 +83,17 @@ public class EntityListResponse extends MenuBean {
         setMenuSessionId(id);
     }
 
-    private void processCaseTiles(Detail shortDetail) {
-        DetailField[] fields = shortDetail.getFields();
-        if (!shortDetail.usesEntityTileView()) {
+    protected void processCaseTiles(Detail shortDetail) {
+        CaseTileConfiguration configuration = CaseTileConfiguration.buildCaseTileConfiguration(shortDetail);
+        if (configuration == null) {
             return;
         }
-        tiles = new Tile[fields.length];
         setUsesCaseTiles(true);
-        for (int i = 0; i < fields.length; i++) {
-            if (fields[i].isCaseTileField()) {
-                tiles[i] = new Tile(fields[i]);
-            } else {
-                tiles[i] = null;
-            }
-        }
-        numEntitiesPerRow = shortDetail.getNumEntitiesToDisplayPerRow();
-        useUniformUnits = shortDetail.useUniformUnitsInCaseTile();
-        Pair<Integer, Integer> maxWidthHeight = shortDetail.getMaxWidthHeight();
-        maxWidth = maxWidthHeight.first;
-        maxHeight = maxWidthHeight.second;
+        setMaxWidth(configuration.getMaxWidth());
+        setMaxHeight(configuration.getMaxHeight());
+        setNumEntitiesPerRow(configuration.getNumEntitiesPerRow());
+        setTiles(configuration.getTiles());
+        setUseUniformUnits(configuration.isUseUniformUnits());
     }
 
     public static Pair<String[], int[]> processHeader(Detail shortDetail, EvaluationContext ec) {
@@ -213,7 +205,7 @@ public class EntityListResponse extends MenuBean {
         return ret;
     }
 
-    private static Style[] processStyles(Detail detail) {
+    public static Style[] processStyles(Detail detail) {
         DetailField[] fields = detail.getFields();
         Style[] styles = new Style[fields.length];
         int i = 0;
@@ -349,5 +341,9 @@ public class EntityListResponse extends MenuBean {
 
     public void setUseUniformUnits(boolean useUniformUnits) {
         this.useUniformUnits = useUniformUnits;
+    }
+
+    public void setTiles(Tile[] tiles) {
+        this.tiles = tiles;
     }
 }
