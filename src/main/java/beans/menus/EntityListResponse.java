@@ -60,8 +60,8 @@ public class EntityListResponse extends MenuBean {
             if (entityList.size() > CASE_LENGTH_LIMIT && !(detail.getNumEntitiesToDisplayPerRow() > 1)) {
                 // we're doing pagination
                 setCurrentPage(offset / CASE_LENGTH_LIMIT);
-                entityList = paginateEntities(entityList, offset);
                 setPageCount((int) Math.ceil((double) entityList.size() / CASE_LENGTH_LIMIT));
+                entityList = paginateEntities(entityList, offset);
             }
             entities = new EntityBean[entityList.size()];
             entityList.toArray(entities);
