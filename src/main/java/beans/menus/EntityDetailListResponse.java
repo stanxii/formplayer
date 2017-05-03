@@ -21,8 +21,7 @@ public class EntityDetailListResponse {
     private EntityDetailResponse[] entityDetailList;
     private boolean isPersistentDetail;
 
-    public EntityDetailListResponse() {
-    }
+    public EntityDetailListResponse() {}
 
     public EntityDetailListResponse(EntityDetailResponse entityDetailResponse) {
         this.entityDetailList = new EntityDetailResponse[]{entityDetailResponse};
@@ -40,9 +39,8 @@ public class EntityDetailListResponse {
             return null;
         }
         EvaluationContext subContext = new EvaluationContext(ec, ref);
-        ArrayList<Object> accumulator = new ArrayList<>();
+        ArrayList<EntityDetailResponse> accumulator = new ArrayList<>();
         for (int i = 0; i < detailList.length; i++) {
-            // For now, don't add sub-details
             if (detailList[i].getNodeset() == null) {
                 EntityDetailSubscreen subscreen = new EntityDetailSubscreen(i,
                         detailList[i],

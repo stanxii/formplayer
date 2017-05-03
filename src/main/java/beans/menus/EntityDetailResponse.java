@@ -35,7 +35,7 @@ public class EntityDetailResponse {
     // Constructor used for persistent case tile
     public EntityDetailResponse(Detail detail, EvaluationContext ec) {
         this(new EntityDetailSubscreen(0, detail, ec, new String[]{}), "Details");
-        processCaseTiles(detail);
+        this.caseTileConfiguration = CaseTileConfiguration.buildCaseTileConfiguration(detail);
         EntityListResponse.processStyles(detail);
     }
 
@@ -52,14 +52,6 @@ public class EntityDetailResponse {
         this.styles = EntityListResponse.processStyles(detail);
         Pair<String[], int[]> pair = EntityListResponse.processHeader(detail, ec);
         setHeaders(pair.first);
-    }
-
-    protected void processCaseTiles(Detail shortDetail) {
-        CaseTileConfiguration configuration = CaseTileConfiguration.buildCaseTileConfiguration(shortDetail);
-        if (configuration == null) {
-            return;
-        }
-        setCaseTileConfiguration(configuration);
     }
 
     public Object[] getDetails() {

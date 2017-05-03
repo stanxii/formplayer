@@ -69,21 +69,13 @@ public class EntityListResponse extends MenuBean {
 
 
         processTitle(session);
-        processCaseTiles(detail);
+        this.caseTileConfiguration = CaseTileConfiguration.buildCaseTileConfiguration(detail);
         this.styles = processStyles(detail);
         this.actions = processActions(nextScreen.getSession());
         Pair<String[], int[]> pair = processHeader(detail, ec);
         this.headers = pair.first;
         this.widthHints = pair.second;
         setMenuSessionId(id);
-    }
-
-    protected void processCaseTiles(Detail shortDetail) {
-        CaseTileConfiguration configuration = CaseTileConfiguration.buildCaseTileConfiguration(shortDetail);
-        if (configuration == null) {
-            return;
-        }
-        setCaseTileConfiguration(configuration);
     }
 
     public static Pair<String[], int[]> processHeader(Detail shortDetail, EvaluationContext ec) {
@@ -159,14 +151,6 @@ public class EntityListResponse extends MenuBean {
             }
         }
         java.util.Collections.sort(entityList, new EntitySorter(shortDetail.getFields(), false, order, new LogNotifier()));
-    }
-
-    public CaseTileConfiguration getCaseTileConfiguration() {
-        return caseTileConfiguration;
-    }
-
-    public void setCaseTileConfiguration(CaseTileConfiguration caseTileConfiguration) {
-        this.caseTileConfiguration = caseTileConfiguration;
     }
 
     static class LogNotifier implements EntitySortNotificationInterface {
@@ -296,4 +280,13 @@ public class EntityListResponse extends MenuBean {
     public String getType() {
         return type;
     }
+    
+    public CaseTileConfiguration getCaseTileConfiguration() {
+        return caseTileConfiguration;
+    }
+
+    public void setCaseTileConfiguration(CaseTileConfiguration caseTileConfiguration) {
+        this.caseTileConfiguration = caseTileConfiguration;
+    }
+
 }
