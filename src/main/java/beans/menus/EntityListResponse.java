@@ -60,8 +60,8 @@ public class EntityListResponse extends MenuBean {
             if (entityList.size() > CASE_LENGTH_LIMIT && !(detail.getNumEntitiesToDisplayPerRow() > 1)) {
                 // we're doing pagination
                 setCurrentPage(offset / CASE_LENGTH_LIMIT);
-                setPageCount((int) Math.ceil((double) entityList.size() / CASE_LENGTH_LIMIT));
                 entityList = paginateEntities(entityList, offset);
+                setPageCount((int) Math.ceil((double) entityList.size() / CASE_LENGTH_LIMIT));
             }
             entities = new EntityBean[entityList.size()];
             entityList.toArray(entities);
@@ -108,7 +108,7 @@ public class EntityListResponse extends MenuBean {
         return full;
     }
 
-    private List<EntityBean> paginateEntities(List<EntityBean> matched,
+    private static List<EntityBean> paginateEntities(List<EntityBean> matched,
                                                          int offset) {
         if(offset > matched.size()){
             throw new RuntimeException("Pagination offset " + offset +
@@ -121,7 +121,6 @@ public class EntityListResponse extends MenuBean {
             end = matched.size();
             length = end - offset;
         }
-        setPageCount((int) Math.ceil((double) matched.size() / CASE_LENGTH_LIMIT));
         matched = matched.subList(offset, offset + length);
         return matched;
     }
@@ -280,7 +279,7 @@ public class EntityListResponse extends MenuBean {
     public String getType() {
         return type;
     }
-    
+
     public CaseTileConfiguration getCaseTileConfiguration() {
         return caseTileConfiguration;
     }
@@ -288,5 +287,4 @@ public class EntityListResponse extends MenuBean {
     public void setCaseTileConfiguration(CaseTileConfiguration caseTileConfiguration) {
         this.caseTileConfiguration = caseTileConfiguration;
     }
-
 }
