@@ -31,20 +31,15 @@ public class EntityListResponse extends MenuBean {
     private DisplayElement[] actions;
     private Style[] styles;
     private String[] headers;
-    private Tile[] tiles;
     private int[] widthHints;
-    private int numEntitiesPerRow;
-    private boolean useUniformUnits;
+
+    private CaseTileConfiguration caseTileConfiguration;
 
     private int pageCount;
     private int currentPage;
     private final String type = "entities";
 
     public static int CASE_LENGTH_LIMIT = 10;
-
-    private boolean usesCaseTiles;
-    private int maxWidth;
-    private int maxHeight;
 
     public EntityListResponse() {}
 
@@ -88,12 +83,7 @@ public class EntityListResponse extends MenuBean {
         if (configuration == null) {
             return;
         }
-        setUsesCaseTiles(true);
-        setMaxWidth(configuration.getMaxWidth());
-        setMaxHeight(configuration.getMaxHeight());
-        setNumEntitiesPerRow(configuration.getNumEntitiesPerRow());
-        setTiles(configuration.getTiles());
-        setUseUniformUnits(configuration.isUseUniformUnits());
+        setCaseTileConfiguration(configuration);
     }
 
     public static Pair<String[], int[]> processHeader(Detail shortDetail, EvaluationContext ec) {
@@ -169,6 +159,14 @@ public class EntityListResponse extends MenuBean {
             }
         }
         java.util.Collections.sort(entityList, new EntitySorter(shortDetail.getFields(), false, order, new LogNotifier()));
+    }
+
+    public CaseTileConfiguration getCaseTileConfiguration() {
+        return caseTileConfiguration;
+    }
+
+    public void setCaseTileConfiguration(CaseTileConfiguration caseTileConfiguration) {
+        this.caseTileConfiguration = caseTileConfiguration;
     }
 
     static class LogNotifier implements EntitySortNotificationInterface {
@@ -297,53 +295,5 @@ public class EntityListResponse extends MenuBean {
 
     public String getType() {
         return type;
-    }
-
-    public boolean getUsesCaseTiles() {
-        return usesCaseTiles;
-    }
-
-    public void setUsesCaseTiles(boolean usesCaseTiles) {
-        this.usesCaseTiles = usesCaseTiles;
-    }
-
-    public Tile[] getTiles() {
-        return tiles;
-    }
-
-    public int getNumEntitiesPerRow() {
-        return numEntitiesPerRow;
-    }
-
-    public void setNumEntitiesPerRow(int numEntitiesPerRow) {
-        this.numEntitiesPerRow = numEntitiesPerRow;
-    }
-
-    public int getMaxHeight() {
-        return maxHeight;
-    }
-
-    public void setMaxHeight(int maxHeight) {
-        this.maxHeight = maxHeight;
-    }
-
-    public int getMaxWidth() {
-        return maxWidth;
-    }
-
-    public void setMaxWidth(int maxWidth) {
-        this.maxWidth = maxWidth;
-    }
-
-    public boolean isUseUniformUnits() {
-        return useUniformUnits;
-    }
-
-    public void setUseUniformUnits(boolean useUniformUnits) {
-        this.useUniformUnits = useUniformUnits;
-    }
-
-    public void setTiles(Tile[] tiles) {
-        this.tiles = tiles;
     }
 }

@@ -22,13 +22,7 @@ public class EntityDetailResponse {
     protected String title;
     protected boolean isUseNodeset;
 
-    private boolean usesCaseTiles;
-
-    private int maxWidth;
-    private int maxHeight;
-    private int numEntitiesPerRow;
-    private Tile[] tiles;
-    private boolean useUniformUnits;
+    private CaseTileConfiguration caseTileConfiguration;
 
     public EntityDetailResponse() {}
 
@@ -67,60 +61,7 @@ public class EntityDetailResponse {
         if (configuration == null) {
             return;
         }
-        setUsesCaseTiles(true);
-        setMaxWidth(configuration.getMaxWidth());
-        setMaxHeight(configuration.getMaxHeight());
-        setNumEntitiesPerRow(configuration.getNumEntitiesPerRow());
-        setTiles(configuration.getTiles());
-        setUseUniformUnits(configuration.isUseUniformUnits());
-    }
-
-    public boolean isUsesCaseTiles() {
-        return usesCaseTiles;
-    }
-
-    public void setUsesCaseTiles(boolean usesCaseTiles) {
-        this.usesCaseTiles = usesCaseTiles;
-    }
-
-    public int getMaxWidth() {
-        return maxWidth;
-    }
-
-    public void setMaxWidth(int maxWidth) {
-        this.maxWidth = maxWidth;
-    }
-
-    public int getMaxHeight() {
-        return maxHeight;
-    }
-
-    public void setMaxHeight(int maxHeight) {
-        this.maxHeight = maxHeight;
-    }
-
-    public int getNumEntitiesPerRow() {
-        return numEntitiesPerRow;
-    }
-
-    public void setNumEntitiesPerRow(int numEntitiesPerRow) {
-        this.numEntitiesPerRow = numEntitiesPerRow;
-    }
-
-    public Tile[] getTiles() {
-        return tiles;
-    }
-
-    public void setTiles(Tile[] tiles) {
-        this.tiles = tiles;
-    }
-
-    public boolean isUseUniformUnits() {
-        return useUniformUnits;
-    }
-
-    public void setUseUniformUnits(boolean useUniformUnits) {
-        this.useUniformUnits = useUniformUnits;
+        setCaseTileConfiguration(configuration);
     }
 
     public Object[] getDetails() {
@@ -176,5 +117,13 @@ public class EntityDetailResponse {
 
     public void setEntities(EntityBean[] entities) {
         this.entities = entities;
+    }
+
+    public CaseTileConfiguration getCaseTileConfiguration() {
+        return caseTileConfiguration;
+    }
+
+    public void setCaseTileConfiguration(CaseTileConfiguration caseTileConfiguration) {
+        this.caseTileConfiguration = caseTileConfiguration;
     }
 }

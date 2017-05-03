@@ -43,7 +43,6 @@ public class CaseTilesTest extends BaseTestClass{
     public void testCaseTiles() throws Exception {
         EntityListResponse response =
                 sessionNavigate(new String[] {"2"}, "casetiles", EntityListResponse.class);
-        assert response.getUsesCaseTiles();
         Tile[] tiles = response.getTiles();
         assert tiles.length == 14;
         assert tiles[13].getFontSize().equals("small");
@@ -58,7 +57,7 @@ public class CaseTilesTest extends BaseTestClass{
         CommandListResponseBean response =
                 sessionNavigate(new String[] {"2", "bf1fc10c-ec65-4af7-b2a4-aa38dcb7af0c"}, "casetiles", CommandListResponseBean.class);
         assert response.getCommands().length == 5;
-        assert response.getPersistentCaseTile().isUsesCaseTiles();
+        //assert response.getPersistentCaseTile().isUsesCaseTiles();
         assert response.getPersistentCaseTile().getTiles().length == 14;
     }
 }
