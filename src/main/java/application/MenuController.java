@@ -8,15 +8,14 @@ import beans.InstallRequestBean;
 import beans.NewFormResponse;
 import beans.NotificationMessage;
 import beans.SessionNavigationBean;
-import beans.menus.BaseResponseBean;
-import beans.menus.EntityDetailListResponse;
-import beans.menus.EntityDetailResponse;
-import beans.menus.UpdateRequestBean;
+import beans.menus.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import exceptions.FormNotFoundException;
 import exceptions.MenuNotFoundException;
 import hq.CaseAPIs;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.commcare.util.screen.CommCareSessionException;
@@ -26,6 +25,8 @@ import org.javarosa.core.model.instance.TreeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import screens.FormplayerQueryScreen;
@@ -39,6 +40,7 @@ import util.Constants;
 import util.SessionUtils;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Hashtable;
@@ -167,22 +169,10 @@ public class MenuController extends AbstractBaseController {
     @AppInstall
     public BaseResponseBean navigateSessionWithAuth(@RequestBody SessionNavigationBean sessionNavigationBean,
                                                     @CookieValue(Constants.POSTGRES_DJANGO_SESSION_ID) String authToken) throws Exception {
-        HqAuth auth = getAuthHeaders(
-                sessionNavigationBean.getDomain(),
-                sessionNavigationBean.getUsername(),
-                authToken
-        );
-        String[] selections = sessionNavigationBean.getSelections();
-        BaseResponseBean response = advanceSessionWithSelections(
-                getMenuSessionFromBean(sessionNavigationBean, authToken),
-                selections,
-                auth,
-                null,
-                sessionNavigationBean.getQueryDictionary(),
-                sessionNavigationBean.getOffset(),
-                sessionNavigationBean.getSearchText()
-        );
-        return response;
+        Resource resource = new ClassPathResource("enikshay_calendar.json");
+        InputStream inputStream = resource.getInputStream();
+        EntityListResponse entityListResponse = new ObjectMapper().readValue(inputStream, EntityListResponse.class);
+        return entityListResponse;
     }
 
     private MenuSession getMenuSessionFromBean(SessionNavigationBean sessionNavigationBean, String authToken) throws Exception {

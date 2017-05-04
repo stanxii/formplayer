@@ -1,0 +1,512 @@
+{
+  "notification": {
+    "message": null,
+    "error": false
+  },
+  "title": "Record Adherence",
+  "clearSession": false,
+  "appId": "070c99cd5415edc31841b447f3a1e2d4",
+  "appVersion": "Formplayer Version: 2.34, App Version: 1835",
+  "selections": null,
+  "locales": [
+    "default",
+    "en",
+    "hin",
+    "guj",
+    "mar"
+  ],
+  "breadcrumbs": [
+    "eNikshay",
+    "Record Adherence",
+    "Record Adherence"
+  ],
+  "menuSessionId": "b0e9a9bb-882b-4a0e-8419-b0a65692be0f",
+  "persistentCaseTile": {
+    "details": [
+      "1 pat culture tu"
+    ],
+    "styles": [
+      {
+        "fontSize": 12,
+        "widthHint": -1,
+        "displayFormat": null
+      }
+    ],
+    "headers": [
+      ""
+    ],
+    "title": "Details",
+    "usesCaseTiles": true,
+    "maxWidth": 12,
+    "maxHeight": 1,
+    "numEntitiesPerRow": 1,
+    "tiles": [
+      {
+        "gridX": 0,
+        "gridY": 0,
+        "gridWidth": 12,
+        "gridHeight": 1,
+        "cssId": null,
+        "fontSize": "large"
+      }
+    ],
+    "useUniformUnits": false
+  },
+  "entities": [
+    {
+      "id": "17258",
+      "data": [
+        "2",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17259",
+      "data": [
+        "3",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17260",
+      "data": [
+        "4",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17261",
+      "data": [
+        "5",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17262",
+      "data": [
+        "6",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17263",
+      "data": [
+        "7",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17264",
+      "data": [
+        "8",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17265",
+      "data": [
+        "9",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17266",
+      "data": [
+        "10",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17267",
+      "data": [
+        "11",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17268",
+      "data": [
+        "12",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17269",
+      "data": [
+        "13",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17270",
+      "data": [
+        "14",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17271",
+      "data": [
+        "15",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17272",
+      "data": [
+        "16",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17273",
+      "data": [
+        "17",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17274",
+      "data": [
+        "18",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17275",
+      "data": [
+        "19",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17276",
+      "data": [
+        "20",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17277",
+      "data": [
+        "21",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17278",
+      "data": [
+        "22",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17279",
+      "data": [
+        "23",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17280",
+      "data": [
+        "24",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17281",
+      "data": [
+        "25",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17282",
+      "data": [
+        "26",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17283",
+      "data": [
+        "27",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17284",
+      "data": [
+        "28",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17285",
+      "data": [
+        "29",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17286",
+      "data": [
+        "30",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17287",
+      "data": [
+        "1",
+        "May",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17288",
+      "data": [
+        "2",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17289",
+      "data": [
+        "3",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    },
+    {
+      "id": "17290",
+      "data": [
+        "<b><u>4</u></b>",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "details": null
+    }
+  ],
+  "actions": [ ],
+  "styles": [
+    {
+      "fontSize": 12,
+      "widthHint": -1,
+      "displayFormat": null
+    },
+    {
+      "fontSize": 12,
+      "widthHint": -1,
+      "displayFormat": null
+    },
+    {
+      "fontSize": 0,
+      "widthHint": -1,
+      "displayFormat": "Image"
+    },
+    {
+      "fontSize": 0,
+      "widthHint": -1,
+      "displayFormat": "Image"
+    },
+    {
+      "fontSize": 0,
+      "widthHint": -1,
+      "displayFormat": "Image"
+    }
+  ],
+  "headers": [
+    "Date",
+    "",
+    "",
+    "",
+    ""
+  ],
+  "tiles": [
+    {
+      "gridX": 5,
+      "gridY": 0,
+      "gridWidth": 6,
+      "gridHeight": 2,
+      "cssId": null,
+      "fontSize": "medium"
+    },
+    {
+      "gridX": 0,
+      "gridY": 0,
+      "gridWidth": 5,
+      "gridHeight": 1,
+      "cssId": null,
+      "fontSize": "small"
+    },
+    {
+      "gridX": 0,
+      "gridY": 4,
+      "gridWidth": 7,
+      "gridHeight": 7,
+      "cssId": null,
+      "fontSize": null
+    },
+    {
+      "gridX": 8,
+      "gridY": 5,
+      "gridWidth": 3,
+      "gridHeight": 3,
+      "cssId": null,
+      "fontSize": null
+    },
+    {
+      "gridX": 8,
+      "gridY": 8,
+      "gridWidth": 3,
+      "gridHeight": 3,
+      "cssId": null,
+      "fontSize": null
+    }
+  ],
+  "widthHints": [
+    20,
+    20,
+    20,
+    20,
+    20
+  ],
+  "numEntitiesPerRow": 7,
+  "useUniformUnits": true,
+  "pageCount": 0,
+  "currentPage": 0,
+  "type": "entities",
+  "usesCaseTiles": true,
+  "maxWidth": 11,
+  "maxHeight": 11
+}
