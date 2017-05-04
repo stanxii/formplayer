@@ -224,7 +224,7 @@ public class WebAppContext extends WebMvcConfigurerAdapter {
     @Bean
     public CouchDbClient userCouchDbClient() {
         return new CouchDbClient(
-                couchDatabaseName + Constants.COUCH_USERS_DB,
+                couchDatabaseName,
                 false,
                 couchProtocol,
                 couchHost,
