@@ -442,6 +442,24 @@ public class BaseTestClass {
                 clazz);
     }
 
+    <T> T sessionNavigateWithOffset(String[] selections,
+                                   String testName,
+                                   int offset,
+                                   Class<T> clazz) throws Exception {
+        SessionNavigationBean sessionNavigationBean = new SessionNavigationBean();
+        sessionNavigationBean.setSelections(selections);
+        sessionNavigationBean.setDomain(testName + "domain");
+        sessionNavigationBean.setAppId(testName + "appid");
+        sessionNavigationBean.setUsername(testName + "username");
+        sessionNavigationBean.setInstallReference("archives/" + testName + ".ccz");
+        sessionNavigationBean.setOffset(offset);
+        return generateMockQuery(ControllerType.MENU,
+                RequestType.POST,
+                Constants.URL_MENU_NAVIGATION,
+                sessionNavigationBean,
+                clazz);
+    }
+
     <T> T sessionNavigateWithId(String[] selections, String sessionId, Class<T> clazz) throws Exception {
         SerializableMenuSession menuSession = menuSessionRepoMock.findOneWrapped(sessionId);
         SessionNavigationBean sessionNavigationBean = new SessionNavigationBean();

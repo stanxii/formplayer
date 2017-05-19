@@ -7,9 +7,12 @@ import beans.menus.EntityDetailResponse;
 import beans.menus.EntityListResponse;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import utils.TestContext;
+
+import static org.mockito.Matchers.anyBoolean;
 
 /**
  * Tests specific to Enikshay
@@ -49,4 +52,21 @@ public class EnikshayTests extends BaseTestClass{
         // Assert we see the case name
         assert newFormResponse.getBreadcrumbs()[2].equals("252923 Test");
     }
+
+    @Test
+    public void testUpdateTestList() throws Exception {
+
+        RestoreFactoryAnswer answer = new RestoreFactoryAnswer("restores/enik_claim.xml");
+        Mockito.doAnswer(answer).when(restoreFactoryMock).getRestoreXml(anyBoolean());
+
+        EntityListResponse entityListResponse =
+                sessionNavigateWithOffset(
+                        new String[]{"2", "1"},
+                        "enikshay",
+                        10,
+                        EntityListResponse.class);
+    }
+
+
+
 }
