@@ -48,7 +48,7 @@ public class FormplayerAuthFilter extends OncePerRequestFilter {
                 setResponseUnauthorized(response, "Invalid session id");
                 return;
             }
-            setDomain(request);
+            request.assertDomain();
             setUserDetails(request);
             JSONObject data = RequestUtils.getPostData(request);
             if (!authorizeRequest(request, data.getString("domain"), getUsername(data))) {
@@ -87,14 +87,6 @@ public class FormplayerAuthFilter extends OncePerRequestFilter {
             }
         }
         return null;
-    }
-
-    private void setDomain(FormplayerHttpRequest request) {
-        JSONObject data = RequestUtils.getPostData(request);
-        if (data.getString("domain") == null) {
-            throw new RuntimeException("No domain specified for the request: " + request.getRequestURI());
-        }
-        request.setDomain(data.getString("domain"));
     }
 
     /**
