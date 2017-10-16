@@ -7,7 +7,7 @@ import repo.SerializableMenuSession;
  * Created by willpride on 12/7/16.
  */
 public abstract class MockMenuSessionRepo implements MenuSessionRepo {
-    private final SerializableMenuSession serializableMenuSession = new SerializableMenuSession();
+    private SerializableMenuSession serializableMenuSession = new SerializableMenuSession();
 
     @Override
     public SerializableMenuSession findOneWrapped(String id) {
@@ -26,5 +26,9 @@ public abstract class MockMenuSessionRepo implements MenuSessionRepo {
         return serializableMenuSession;
     }
 
+    @Override
+    public void delete(SerializableMenuSession session) {
+        serializableMenuSession = new SerializableMenuSession();
+    }
 
 }

@@ -260,11 +260,13 @@ public class BaseTestClass {
         submitRequestBean.setPrevalidated(true);
         submitRequestBean.setUsername(formSessionRepoMock.findOneWrapped(sessionId).getUsername());
         submitRequestBean.setDomain(formSessionRepoMock.findOneWrapped(sessionId).getDomain());
-        return generateMockQuery(ControllerType.FORM,
+        SubmitResponseBean submitResponseBean = generateMockQuery(ControllerType.FORM,
                 RequestType.POST,
                 Constants.URL_SUBMIT_FORM,
                 submitRequestBean,
                 SubmitResponseBean.class);
+        formSessionRepoMock.delete(formSessionRepoMock.findOneWrapped(sessionId));
+        return submitResponseBean;
     }
 
     SyncDbResponseBean syncDb() throws Exception {

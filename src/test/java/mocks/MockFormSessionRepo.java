@@ -7,7 +7,7 @@ import repo.FormSessionRepo;
  * Created by willpride on 12/7/16.
  */
 public abstract class MockFormSessionRepo implements FormSessionRepo {
-    private final SerializableFormSession serializableFormSession = new SerializableFormSession();
+    private SerializableFormSession serializableFormSession = new SerializableFormSession();
 
     @Override
     public SerializableFormSession findOneWrapped(String id) {
@@ -26,6 +26,11 @@ public abstract class MockFormSessionRepo implements FormSessionRepo {
         serializableFormSession.setOneQuestionPerScreen(toBeSaved.getOneQuestionPerScreen());
         serializableFormSession.setCurrentIndex(toBeSaved.getCurrentIndex());
         return serializableFormSession;
+    }
+
+    @Override
+    public void delete(SerializableFormSession session) {
+        serializableFormSession = new SerializableFormSession();
     }
 
 
