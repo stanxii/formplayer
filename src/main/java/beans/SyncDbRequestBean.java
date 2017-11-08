@@ -11,7 +11,7 @@ public class SyncDbRequestBean extends AuthenticatedRequestBean {
 
     public SyncDbRequestBean(){}
 
-    public boolean isPreserveCache() {
+    public boolean getPreserveCache() {
         return preserveCache;
     }
 

@@ -1,15 +1,14 @@
 package services;
 
 import api.process.FormRecordProcessorHelper;
+import auth.DjangoAuth;
 import auth.HqAuth;
 import beans.AuthenticatedRequestBean;
 import engine.FormplayerTransactionParserFactory;
 import exceptions.AsyncRetryException;
 import exceptions.SQLiteRuntimeException;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.commcare.core.parse.ParseUtils;
 import org.commcare.modern.database.TableBuilder;
 import org.javarosa.core.api.ClassNameHasher;
 import org.javarosa.core.model.User;
@@ -24,7 +23,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.w3c.dom.Document;
@@ -38,10 +37,7 @@ import sandbox.SqliteIndexedStorageUtility;
 import sandbox.UserSqlSandbox;
 import sqlitedb.SQLiteDB;
 import sqlitedb.UserDB;
-import util.Constants;
-import util.FormplayerSentry;
-import util.SimpleTimer;
-import util.UserUtils;
+import util.*;
 
 import javax.annotation.Resource;
 import javax.xml.parsers.DocumentBuilder;
@@ -52,6 +48,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -105,13 +103,17 @@ public class RestoreFactory {
                 "username = %s, asUsername = %s, domain = %s, useLiveQuery = %s", username, asUsername, domain, useLiveQuery));
     }
 
-    // This function will only wipe user DBs when they have expired, otherwise will incremental sync
     public UserSqlSandbox performTimedSync() throws Exception {
+        return performTimedSync(false);
+    }
+
+    // This function will only wipe user DBs when they have expired, otherwise will incremental sync
+    public UserSqlSandbox performTimedSync(boolean overwriteCache) throws Exception {
         // Create parent dirs if needed
         if(getSqlSandbox().getLoggedInUser() != null){
             getSQLiteDB().createDatabaseFolder();
         }
-        UserSqlSandbox sandbox = restoreUser();
+        UserSqlSandbox sandbox = restoreUser(overwriteCache);
         SimpleTimer purgeTimer = new SimpleTimer();
         purgeTimer.start();
         FormRecordProcessorHelper.purgeCases(sandbox);
@@ -127,35 +129,35 @@ public class RestoreFactory {
             return getSqlSandbox();
         } else {
             getSQLiteDB().createDatabaseFolder();
-            return restoreUser();
+            return restoreUser(false);
         }
     }
 
-    private UserSqlSandbox restoreUser() throws
+    private UserSqlSandbox restoreUser(boolean overwriteCache) throws
             UnfullfilledRequirementsException, InvalidStructureException, IOException, XmlPullParserException {
         PrototypeFactory.setStaticHasher(new ClassNameHasher());
         int maxRetries = 2;
         int counter = 0;
         while (true) {
             try {
-                UserSqlSandbox sandbox = getSqlSandbox();
                 SimpleTimer parseTimer = new SimpleTimer();
                 parseTimer.start();
-                FormplayerTransactionParserFactory factory = new FormplayerTransactionParserFactory(sandbox, true);
-                InputStream restoreStream = getRestoreXml();
                 setAutoCommit(false);
-                ParseUtils.parseIntoSandbox(restoreStream, factory, true, true);
-                // commit() automatically re-enables autocommit
+
+                getRestoreXml(overwriteCache);
                 commit();
+                setAutoCommit(true);
+
                 parseTimer.end();
                 categoryTimingHelper.recordCategoryTiming(parseTimer, Constants.TimingCategories.PARSE_RESTORE);
+                UserSqlSandbox sandbox = getSqlSandbox();
                 sandbox.writeSyncToken();
                 return sandbox;
-            } catch (InvalidStructureException | SQLiteRuntimeException e) {
-                if (e instanceof InvalidStructureException || ++counter >= maxRetries) {
+            } catch (SQLiteRuntimeException e) {
+                if (++counter >= maxRetries) {
                     // Before throwing exception, rollback any changes to relinquish SQLite lock
-                    // rollback() automatically re-enables autocommit
                     rollback();
+                    setAutoCommit(true);
                     getSQLiteDB().deleteDatabaseFile();
                     getSQLiteDB().createDatabaseFolder();
                     throw e;
@@ -165,7 +167,6 @@ public class RestoreFactory {
                             e);
                 }
             } finally {
-                // No-op if autocommit was already enabled
                 setAutoCommit(true);
             }
         }
@@ -256,16 +257,6 @@ public class RestoreFactory {
         }
     }
 
-    public InputStream getRestoreXml() {
-        ensureValidParameters();
-        String restoreUrl = getRestoreUrl();
-        recordSentryData(restoreUrl);
-        log.info("Restoring from URL " + restoreUrl);
-        InputStream restoreStream = getRestoreXmlHelper(restoreUrl, hqAuth);
-        setLastSyncTime();
-        return restoreStream;
-    }
-
     private void recordSentryData(final String restoreUrl) {
         raven.newBreadcrumb()
                 .setData("restoreUrl", restoreUrl)
@@ -345,40 +336,33 @@ public class RestoreFactory {
         );
     }
 
-    private InputStream getRestoreXmlHelper(String restoreUrl, HqAuth auth) {
-        RestTemplate restTemplate = new RestTemplate();
+    public void getRestoreXml(boolean overwriteCache) {
+        ensureValidParameters();
+        String restoreUrl = getRestoreUrl(overwriteCache);
+        recordSentryData(restoreUrl);
+        log.info("Restoring from URL " + restoreUrl);
+        restoreHelper(restoreUrl, new DjangoAuth("p9ozrieewht8b50n6aan66mcp9ja5yio"));
+    }
+
+    private void restoreHelper(String restoreUrl, HqAuth auth) {
+        UserSqlSandbox sandbox = getSqlSandbox();
+        FormplayerTransactionParserFactory factory = new FormplayerTransactionParserFactory(sandbox, true);
+        List<HttpMessageConverter<?>> converters = new ArrayList<>();
+        converters.add(new RestoreHttpMessageConverter(factory));
+        RestTemplate restTemplate = new RestTemplate(converters);
         log.info("Restoring at domain: " + domain + " with auth: " + auth + " with url: " + restoreUrl);
         HttpHeaders headers = auth.getAuthHeaders();
         headers.add("x-openrosa-version", "2.0");
         SimpleTimer timer = new SimpleTimer();
         timer.start();
-        ResponseEntity<org.springframework.core.io.Resource> response = restTemplate.exchange(
+        restTemplate.exchange(
                 restoreUrl,
                 HttpMethod.GET,
                 new HttpEntity<String>(headers),
-                org.springframework.core.io.Resource.class
+                InputStream.class
         );
         timer.end();
-
-        // Handle Async restore
-        if (response.getStatusCode().value() == 202) {
-            String responseBody = null;
-            try {
-                responseBody = IOUtils.toString(response.getBody().getInputStream(), "utf-8");
-            } catch (IOException e) {
-                throw new RuntimeException("Unable to read async restore response", e);
-            }
-            handleAsyncRestoreResponse(responseBody, response.getHeaders());
-        }
-
-        InputStream stream = null;
-        try {
-            stream = response.getBody().getInputStream();
-            categoryTimingHelper.recordCategoryTiming(timer, Constants.TimingCategories.DOWNLOAD_RESTORE);
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to read restore response", e);
-        }
-        return stream;
+        categoryTimingHelper.recordCategoryTiming(timer, Constants.TimingCategories.DOWNLOAD_RESTORE);
     }
 
     public String getSyncToken() {
@@ -408,14 +392,18 @@ public class RestoreFactory {
     }
 
     public String getRestoreUrl() {
+        return getRestoreUrl(false);
+    }
+
+    public String getRestoreUrl(boolean overwriteCache) {
         StringBuilder builder = new StringBuilder();
-        builder.append(host);
+        builder.append("https://enikshay.in/");
         builder.append("/a/");
-        builder.append(domain);
+        builder.append("enikshay");
         builder.append("/phone/restore/?version=2.0");
         String syncToken = getSyncToken();
         if (syncToken != null && !"".equals(syncToken)) {
-            builder.append("&since=").append(syncToken);
+            //builder.append("&since=").append(syncToken);
         }
         builder.append("&device_id=").append(getSyncDeviceId());
 
@@ -423,9 +411,14 @@ public class RestoreFactory {
             builder.append("&case_sync=livequery");
         }
 
-        if( asUsername != null) {
+        if(asUsername != null) {
             builder.append("&as=").append(asUsername).append("@").append(domain).append(".commcarehq.org");
         }
+
+        if (overwriteCache) {
+            builder.append("&overwrite_cache=true");
+        }
+
         return builder.toString();
     }
 
