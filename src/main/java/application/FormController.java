@@ -21,6 +21,7 @@ import beans.SubmitRequestBean;
 import beans.SubmitResponseBean;
 import beans.menus.ErrorBean;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.deser.std.StringArrayDeserializer;
 import engine.FormplayerTransactionParserFactory;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -154,8 +155,11 @@ public class FormController extends AbstractBaseController{
 
                 if (!submitResponse.getStatusCode().is2xxSuccessful()) {
                     submitResponseBean.setStatus("error");
-                    submitResponseBean.setNotification(new NotificationMessage(
-                            "Form submission failed with error response" + submitResponse, true));
+                    submitResponseBean.setNotification(
+                            new NotificationMessage(
+                                    String.format("Form submission to CommCareHQ failed with response code %s",
+                                            submitResponse),
+                                    true));
                     log.error("Submit response bean: " + submitResponseBean);
                     return submitResponseBean;
                 } else {
